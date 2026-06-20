@@ -23,11 +23,10 @@ export function Header() {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "border-b border-border/60 bg-background/80 backdrop-blur-xl"
-          : "bg-transparent"
-      }`}
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${scrolled
+        ? "border-b border-border/60 bg-background/80 backdrop-blur-xl"
+        : "border-b border-transparent bg-transparent"
+        }`}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-6 py-4 lg:px-10">
         {/* Logo */}

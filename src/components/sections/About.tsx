@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import portrait from "@/assets/portrait.jpg";
+import portrait from "@/assets/1.png";
 
 const STATS = [
   { n: "12+", l: "Years Experience" },
