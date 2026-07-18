@@ -126,14 +126,17 @@ async function main() {
 
     // Demo data — safe to fully replace rather than migrate on schema changes.
     await products.deleteMany({});
+    const collections = db.collection("collections");
+    await collections.deleteMany({});
 
+    const insertedProductIds: ObjectId[] = [];
     for (const product of PRODUCTS) {
       const filename = `${randomUUID()}.jpg`;
       await copyFile(path.join(SOURCE_DIR, product.sourceFile), path.join(UPLOAD_DIR, filename));
       const asset = { url: `/uploads/products/${filename}`, type: "image", isPrimary: true };
 
       const now = new Date();
-      await products.insertOne({
+      const result = await products.insertOne({
         categoryId: categoryIds.get(product.category),
         title: product.title,
         description: product.description,
@@ -150,9 +153,22 @@ async function main() {
         createdAt: now,
         updatedAt: now,
       });
+      insertedProductIds.push(result.insertedId);
     }
 
-    console.log(`Seeded ${CATEGORY_NAMES.length} categories and ${PRODUCTS.length} products.`);
+    const collectionNow = new Date();
+    await collections.insertOne({
+      name: "Built for the grind.",
+      description: "Gear, fuel, and programs we actually use. Curated. Tested. Minimal.",
+      productIds: insertedProductIds,
+      showOnLandingPage: true,
+      createdAt: collectionNow,
+      updatedAt: collectionNow,
+    });
+
+    console.log(
+      `Seeded ${CATEGORY_NAMES.length} categories, ${PRODUCTS.length} products, and 1 collection.`,
+    );
   } finally {
     await client.close();
   }

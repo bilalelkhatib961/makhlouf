@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import type { ProductPublic } from "@/products/types";
-import { useCart } from "@/cart/CartContext";
+import { lineKey, useCart } from "@/cart/CartContext";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +41,11 @@ export function ProductQuickView({
   useEffect(() => {
     if (open && product) {
       setActiveImage(0);
-      setSelectedVariantId(product.variants.length === 1 ? product.variants[0].id : null);
+      // Default to a real, in-stock variant so the picker shows an actual
+      // name immediately instead of forcing a "choose one" placeholder;
+      // fall back to the first variant if everything's sold out.
+      const inStock = product.variants.find((v) => v.quantity > 0);
+      setSelectedVariantId((inStock ?? product.variants[0]).id);
       setQuantity(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -54,10 +58,14 @@ export function ProductQuickView({
     product.variants.find((v) => v.id === selectedVariantId) ?? product.variants[0];
   const price = variantPrice(displayVariant);
   const images = displayVariant.assets.filter((a) => a.type === "image");
-  const needsVariantChoice = hasMultipleVariants && !selectedVariantId;
+  const alreadyInCart =
+    cart.items.find((i) => i.key === lineKey(product.id, displayVariant.id))?.quantity ?? 0;
+  const remainingStock = displayVariant.quantity - alreadyInCart;
+  const soldOut = displayVariant.quantity === 0;
+  const maxedInCart = !soldOut && remainingStock <= 0;
 
   const handleAddToCart = () => {
-    if (needsVariantChoice) return;
+    if (remainingStock <= 0) return;
     cart.addItem(
       {
         productId: product.id,
@@ -66,6 +74,7 @@ export function ProductQuickView({
         title: product.title,
         image: images[0]?.url,
         unitPrice: price,
+        maxQuantity: displayVariant.quantity,
       },
       quantity,
     );
@@ -135,10 +144,11 @@ export function ProductQuickView({
                   onValueChange={(value) => {
                     setSelectedVariantId(value);
                     setActiveImage(0);
+                    setQuantity(1);
                   }}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Choose a variant" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {product.variants.map((v) => (
@@ -158,32 +168,35 @@ export function ProductQuickView({
               <div className="flex items-center gap-2">
                 <button
                   aria-label="Decrease quantity"
+                  disabled={quantity <= 1}
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="grid h-8 w-8 place-items-center rounded-sm border border-border hover:bg-muted"
+                  className="grid h-8 w-8 place-items-center rounded-sm border border-border hover:bg-muted disabled:opacity-40"
                 >
                   <Minus className="h-3.5 w-3.5" />
                 </button>
                 <span className="w-6 text-center text-sm">{quantity}</span>
                 <button
                   aria-label="Increase quantity"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  className="grid h-8 w-8 place-items-center rounded-sm border border-border hover:bg-muted"
+                  disabled={quantity >= remainingStock}
+                  onClick={() => setQuantity((q) => Math.min(q + 1, remainingStock))}
+                  className="grid h-8 w-8 place-items-center rounded-sm border border-border hover:bg-muted disabled:opacity-40"
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
               </div>
+              {alreadyInCart > 0 && !soldOut && (
+                <span className="text-xs text-muted-foreground">
+                  {alreadyInCart} already in cart
+                </span>
+              )}
             </div>
 
             <button
               onClick={handleAddToCart}
-              disabled={needsVariantChoice || displayVariant.quantity === 0}
+              disabled={remainingStock <= 0}
               className="mt-6 h-12 w-full rounded-sm bg-foreground text-sm font-medium uppercase tracking-[0.18em] text-background disabled:opacity-50"
             >
-              {needsVariantChoice
-                ? "Choose a Variant"
-                : displayVariant.quantity === 0
-                  ? "Out of Stock"
-                  : "Add to Cart"}
+              {soldOut ? "Out of Stock" : maxedInCart ? "Max in Cart" : "Add to Cart"}
             </button>
           </div>
         </div>

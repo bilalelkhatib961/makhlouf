@@ -3,11 +3,11 @@ import { Hero } from "@/components/sections/Hero";
 import { About } from "@/components/sections/About";
 import { PromoBanner } from "@/components/sections/PromoBanner";
 import { Gallery } from "@/components/sections/Gallery";
-import { Products } from "@/components/sections/Products";
-import { publicProductsQuery } from "@/products/queries";
+import { Collections } from "@/components/sections/Collections";
+import { collectionsQuery } from "@/products/queries";
 
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(publicProductsQuery),
+  loader: ({ context }) => context.queryClient.ensureQueryData(collectionsQuery("landing")),
   head: () => ({
     meta: [
       { title: "Makhlouf — Premium Personal Training & Fitness Gear" },
@@ -34,7 +34,7 @@ function Index() {
       <About />
       <PromoBanner />
       <Gallery />
-      <Products />
+      <Collections scope="landing" />
     </>
   );
 }

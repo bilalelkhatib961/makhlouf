@@ -35,10 +35,11 @@ marketing header/footer.
 **Built:**
 - MongoDB-backed auth for two seeded accounts (one coach, one client),
   role-based routing/redirects, full navigation shell for `/coach` and `/portal`.
-- Real, dynamic **Products & Categories**: coach CRUD (with image upload) at
-  `/coach/products` (tabbed), a public shop reading the same live data
-  (`/` and `/shop`), a product quick-view dialog, and a client-side cart
-  (add/edit/remove — **no checkout**). See "Products & Catalog" below.
+- Real, dynamic **Products, Categories & Collections**: coach CRUD (with image
+  upload) at `/coach/products` (three tabs), a public shop reading the same
+  live data (`/` and `/shop`, rendered as collection sections), a product
+  quick-view dialog, and a client-side cart (add/edit/remove, stock-aware
+  quantity limits — **no checkout**). See "Products & Catalog" below.
 
 **Still hardcoded dummy data — not built yet:**
 - Clients, Subscriptions, Exercises, Schedules in the coach CMS, and Diet,
@@ -130,6 +131,17 @@ MongoDB, database name `makhlouf` (see `.env` / `MONGODB_DB_NAME`).
   createdAt: Date;
   updatedAt: Date;
 }
+
+// collections
+{
+  _id: ObjectId;
+  name: string;
+  description: string;
+  productIds: ObjectId[];       // order = display order
+  showOnLandingPage: boolean;   // gates `/` only — `/shop` always shows every collection
+  createdAt: Date;
+  updatedAt: Date;
+}
 ```
 
 Pricing, stock, active-state, and images all live **per variant**, not on the product — a
@@ -157,10 +169,14 @@ running on `127.0.0.1:27017`, no auth). It's idempotent — safe to re-run.
 | Coach  | coach@makhlouf.com    | Coach!2025   | Marcus Vale   |
 | Client | client@makhlouf.com   | Client!2025  | Jordan Ellis  |
 
-Run `npm run db:seed:catalog` to populate demo categories + products. Categories
-are idempotent (matched by `name`); products are **not** — the script clears the
-whole `products` collection and reinserts fresh every run, since it's demo data
-and simplest to fully replace on schema changes rather than migrate in place.
+Run `npm run db:seed:catalog` to populate demo categories + products + one
+collection. Categories are idempotent (matched by `name`); products and the
+collection are **not** — the script clears both collections and reinserts
+fresh every run, since it's demo data and simplest to fully replace on schema
+changes rather than migrate in place. The seeded collection is named "Built
+for the grind." with description "Gear, fuel, and programs we actually use.
+Curated. Tested. Minimal." (the site's original hardcoded shop-section copy,
+now real data) and references all 6 seeded products, `showOnLandingPage: true`.
 
 ## Products & Catalog
 
@@ -169,9 +185,15 @@ and simplest to fully replace on schema changes rather than migrate in place.
   client-safe), `categories.server.ts`, `products.server.ts` (two read
   paths — `listProductsPublic` strips `basePrice`/`isActive` and returns only
   each product's active variants, excluding products left with zero after
-  that filter; `listProductsAdmin` returns everything), `upload.server.ts`,
-  `functions.ts` (the `createServerFn` RPCs — `getPublicProductsFn` is the
-  only one without `coachMiddleware`).
+  that filter; `listProductsAdmin` returns everything), `collections.server.ts`
+  (`listCollectionsPublic(onlyLandingPage)` calls `listProductsPublic()` once
+  and resolves each collection's `productIds` against it, preserving
+  collection order and silently dropping ids that no longer resolve — e.g. a
+  deleted or deactivated product; `listCollectionsAdmin` returns raw
+  `productIds` for the coach table/picker), `upload.server.ts`, `functions.ts`
+  (the `createServerFn` RPCs — `getPublicCollectionsFn` is the only public one
+  without `coachMiddleware`; there is no standalone "all products" public RPC
+  since the shop is collection-driven now).
 - **Image upload**: local filesystem, no cloud service. `upload.server.ts`
   writes to `public/uploads/products/<uuid>.<ext>` (created on first write)
   via a `FormData`-accepting server function; Vite serves `public/` at `/` in
@@ -182,39 +204,64 @@ and simplest to fully replace on schema changes rather than migrate in place.
   above — same underlying problem), local filesystem writes won't work
   there either; swap for S3/Cloudinary/R2 at that point. New uploads render
   from an in-browser `URL.createObjectURL(file)` preview, never the raw
-  server URL, inside the coach form — see `ProductVariantFields.tsx`.
-- **Coach CMS** (`/coach/products`): one route, two tabs (shadcn `Tabs`) —
-  Products and Categories — built as `src/components/coach/ProductsTab.tsx`
-  / `CategoriesTab.tsx` / `ProductFormDialog.tsx` / `ProductVariantFields.tsx`
-  (one repeatable block per variant: name, price/discount/quantity, active
-  switch, its own image uploader). Data via TanStack Query; mutations use
+  server URL, inside the coach form — see `ProductVariantFields.tsx`. The
+  variant form also shows a live "Price after discount" readout next to the
+  Discount % field so the coach doesn't have to do the math.
+- **Coach CMS** (`/coach/products`): one route, three tabs (shadcn `Tabs`) —
+  Products, Categories, Collections — built as
+  `src/components/coach/ProductsTab.tsx` / `CategoriesTab.tsx` /
+  `CollectionsTab.tsx` / `ProductFormDialog.tsx` / `ProductVariantFields.tsx`
+  (one repeatable block per variant) / `CollectionFormDialog.tsx` (name,
+  description, "show on landing page" switch, and a scrollable checkbox list
+  over the coach's product list — shadcn `Checkbox`, no combobox dependency
+  needed at this catalog size). Data via TanStack Query; mutations use
   `useMutation` + `invalidateQueries` so the coach's own edits show up
-  immediately. `ProductFormDialog` deliberately does **not** use
-  `react-hook-form` — the per-variant dynamic arrays with async upload state
-  fit plain `useState` + a manual submit-time check better than RHF's
-  field-array API for this shape (title/description/category are simple
-  controlled inputs, same pattern as `CategoriesTab.tsx`'s form).
-- **Public shop**: `src/components/sections/Products.tsx` (shared by `/` and
-  `/shop`) fetches via `useQuery(publicProductsQuery)` (`src/products/queries.ts`,
-  a shared `queryOptions()` so `index.tsx`/`shop.tsx` can also
-  `ensureQueryData` it in their route `loader` — avoids a loading-state flash
-  on first paint since the data is already in the query cache by the time the
-  component renders). The whole card is clickable (opens
-  `src/components/ProductQuickView.tsx`, the detail dialog with a variant
-  picker keyed by variant `name`, quantity, add to cart) — the "Add"/"Eye"
-  buttons `stopPropagation()` so they don't double-fire the card's own click.
-  Card price shows "From $X" when a product has more than one variant (the
-  cheapest active one). No `useServerFn` wrapper needed for these reads —
-  that wrapper is only required when a server function throws
-  `redirect`/`notFound`, and these just return data.
+  immediately. `ProductFormDialog`/`CollectionFormDialog` deliberately do
+  **not** use `react-hook-form` — dynamic arrays (variants, per-variant
+  assets, picked products) fit plain `useState` + a manual submit-time check
+  better than RHF's field-array API for these shapes (simple scalar fields
+  are plain controlled inputs, same pattern as `CategoriesTab.tsx`'s form).
+- **Collections drive the public shop** — `src/components/sections/Collections.tsx`
+  (renamed from `Products.tsx`, which rendered one hardcoded section; now
+  renders one `CollectionSection` per collection) takes a `scope: "landing" |
+  "shop"` prop and fetches `collectionsQuery(scope)`
+  (`src/products/queries.ts`, a `queryOptions()` factory keyed by scope so
+  `index.tsx`/`shop.tsx` can also `ensureQueryData` it in their route
+  `loader` — avoids a loading-state flash on first paint). `scope="landing"`
+  only fetches collections with `showOnLandingPage: true`; `scope="shop"`
+  fetches all of them. `src/components/sections/CollectionSection.tsx` is the
+  actual header/scroller/card section (previously inlined in `Products.tsx`),
+  parametrized by `collection.name`/`description`/`products` instead of the
+  old hardcoded "Built for the grind." copy — that copy is now the seeded
+  collection's actual name/description (see seed data below), not
+  placeholder text. Each section owns its own scroll ref so multiple
+  collections on one page don't fight over it. The whole card is clickable
+  (opens `src/components/ProductQuickView.tsx`) — the "Add"/"Eye" buttons
+  `stopPropagation()` so they don't double-fire the card's own click. Card
+  price shows "From $X" when a product has more than one variant (the
+  cheapest active one). `ProductQuickView` defaults `selectedVariantId` to
+  the first in-stock variant (falling back to the first variant if everything
+  is sold out) as soon as it opens, rather than forcing a "choose one"
+  placeholder — the picker (`Select`, shown only when >1 variant) shows a
+  real variant name immediately and "Add to Cart" is actionable right away.
 - **Cart**: pure client state, not a DB-backed order — guests can use it
   without an account (`src/cart/CartContext.tsx`, Context + `localStorage`,
   hydrated post-mount only to avoid SSR mismatches). Mounted in
   `__root.tsx`'s public branch (same place `Header`/`Footer` render). Line
-  identity is `` `${productId}__${variantId}` ``, so different variants of the
-  same product are separate cart lines. Cart open/close state lives in
-  `CartContext` too (`isOpen`/`openCart`/`closeCart`/`setCartOpen`), not local
-  `useState` in `Header.tsx` — needed so `Products.tsx`/`ProductQuickView.tsx`
+  identity is `` `${productId}__${variantId}` `` (exported as `lineKey()` so
+  other components can look up "is this variant already in the cart" without
+  duplicating the format string), so different variants of the same product
+  are separate cart lines. Every `CartItem` carries `maxQuantity` — a
+  snapshot of the variant's stock taken at add-time, not a live lookup (the
+  cart has no server round-trip and there's no checkout yet to reconcile
+  against real stock) — `addItem`/`updateQuantity` both clamp to it, and
+  `CartSheet.tsx`'s `+`/`ProductQuickView.tsx`'s `+` disable once quantity
+  reaches `maxQuantity` **minus whatever's already in the cart for that exact
+  variant**; `-` disables at 1 (the trash icon is the only way to remove a
+  line now — decrementing to 0 via `-` no longer auto-removes it). Cart
+  open/close state lives in `CartContext` too
+  (`isOpen`/`openCart`/`closeCart`/`setCartOpen`), not local `useState` in
+  `Header.tsx` — needed so `CollectionSection.tsx`/`ProductQuickView.tsx`
   (neither a descendant of `Header`) can call `cart.openCart()` right after
   `addItem()` to auto-open the drawer as add-to-cart confirmation.
   `src/components/CartSheet.tsx` is the slide-over UI, reads `isOpen` directly
@@ -292,3 +339,9 @@ and simplest to fully replace on schema changes rather than migrate in place.
 - No cross-tab/cross-session live sync for shop data — a guest's already-open
   tab won't see a coach's edit until it refetches (page reload / remount).
   No websockets/polling built for this; matches the MVP scope of the ask.
+- **The public site is collection-driven, not "every active product,
+  always visible."** A product that isn't included in any collection won't
+  appear on `/` or `/shop` at all, even if it's active with stock. This is a
+  deliberate consequence of the Collections feature, not a bug — no fallback
+  "uncategorized products" section was requested or built. Worth revisiting
+  if a coach ever reports a product "disappearing."

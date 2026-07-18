@@ -64,3 +64,25 @@ export interface ProductInput {
   description: string;
   variants: ProductVariantInput[];
 }
+
+export interface CollectionPublic {
+  id: string;
+  name: string;
+  description: string;
+  products: ProductPublic[];
+}
+
+export interface CollectionAdmin {
+  id: string;
+  name: string;
+  description: string;
+  productIds: string[];
+  showOnLandingPage: boolean;
+}
+
+export interface CollectionInput {
+  name: string;
+  description: string;
+  productIds: string[];
+  showOnLandingPage: boolean;
+}

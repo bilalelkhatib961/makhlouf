@@ -9,6 +9,7 @@ export interface CartItem {
   image?: string;
   unitPrice: number;
   quantity: number;
+  maxQuantity: number;
 }
 
 interface AddItemInput {
@@ -18,6 +19,7 @@ interface AddItemInput {
   title: string;
   image?: string;
   unitPrice: number;
+  maxQuantity: number;
 }
 
 interface CartContextValue {
@@ -38,7 +40,10 @@ const STORAGE_KEY = "makhlouf_cart";
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function lineKey(productId: string, variantId: string) {
+// Co-exported with CartProvider/useCart by design — other components need
+// this to compute a cart line's key without duplicating the format string.
+// eslint-disable-next-line react-refresh/only-export-components
+export function lineKey(productId: string, variantId: string) {
   return `${productId}__${variantId}`;
 }
 
@@ -70,10 +75,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const existing = prev.find((item) => item.key === key);
         if (existing) {
           return prev.map((item) =>
-            item.key === key ? { ...item, quantity: item.quantity + quantity } : item,
+            item.key === key
+              ? {
+                  ...item,
+                  maxQuantity: input.maxQuantity,
+                  quantity: Math.min(item.quantity + quantity, input.maxQuantity),
+                }
+              : item,
           );
         }
-        return [...prev, { ...input, key, quantity }];
+        return [...prev, { ...input, key, quantity: Math.min(quantity, input.maxQuantity) }];
       });
     };
 
@@ -81,7 +92,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItems((prev) =>
         quantity <= 0
           ? prev.filter((item) => item.key !== key)
-          : prev.map((item) => (item.key === key ? { ...item, quantity } : item)),
+          : prev.map((item) =>
+              item.key === key ? { ...item, quantity: Math.min(quantity, item.maxQuantity) } : item,
+            ),
       );
     };
 

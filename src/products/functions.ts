@@ -8,12 +8,13 @@ import {
   updateCategory,
 } from "./categories.server";
 import {
-  createProduct,
-  deleteProduct,
-  listProductsAdmin,
-  listProductsPublic,
-  updateProduct,
-} from "./products.server";
+  createCollection,
+  deleteCollection,
+  listCollectionsAdmin,
+  listCollectionsPublic,
+  updateCollection,
+} from "./collections.server";
+import { createProduct, deleteProduct, listProductsAdmin, updateProduct } from "./products.server";
 import { saveProductImage } from "./upload.server";
 
 const categoryInputSchema = z.object({ name: z.string().min(1, "Name is required") });
@@ -42,11 +43,18 @@ const productInputSchema = z.object({
   variants: z.array(variantSchema).min(1, "At least one variant is required"),
 });
 
+const collectionInputSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().min(1, "Description is required"),
+  productIds: z.array(z.string().min(1)),
+  showOnLandingPage: z.boolean(),
+});
+
 // --- Reads (public — no auth, guests browse the shop) ---
 
-export const getPublicProductsFn = createServerFn({ method: "GET" }).handler(async () => {
-  return listProductsPublic();
-});
+export const getPublicCollectionsFn = createServerFn({ method: "GET" })
+  .validator(z.object({ onlyLandingPage: z.boolean() }))
+  .handler(async ({ data }) => listCollectionsPublic(data.onlyLandingPage));
 
 export const getCoachCategoriesFn = createServerFn({ method: "GET" })
   .middleware([coachMiddleware])
@@ -58,6 +66,12 @@ export const getCoachProductsFn = createServerFn({ method: "GET" })
   .middleware([coachMiddleware])
   .handler(async () => {
     return listProductsAdmin();
+  });
+
+export const getCoachCollectionsFn = createServerFn({ method: "GET" })
+  .middleware([coachMiddleware])
+  .handler(async () => {
+    return listCollectionsAdmin();
   });
 
 // --- Category mutations (coach-only) ---
@@ -93,6 +107,23 @@ export const deleteProductFn = createServerFn({ method: "POST" })
   .middleware([coachMiddleware])
   .validator(z.object({ id: z.string().min(1) }))
   .handler(async ({ data }) => deleteProduct(data.id));
+
+// --- Collection mutations (coach-only) ---
+
+export const createCollectionFn = createServerFn({ method: "POST" })
+  .middleware([coachMiddleware])
+  .validator(collectionInputSchema)
+  .handler(async ({ data }) => createCollection(data));
+
+export const updateCollectionFn = createServerFn({ method: "POST" })
+  .middleware([coachMiddleware])
+  .validator(z.object({ id: z.string().min(1), input: collectionInputSchema }))
+  .handler(async ({ data }) => updateCollection(data.id, data.input));
+
+export const deleteCollectionFn = createServerFn({ method: "POST" })
+  .middleware([coachMiddleware])
+  .validator(z.object({ id: z.string().min(1) }))
+  .handler(async ({ data }) => deleteCollection(data.id));
 
 // --- Asset upload (coach-only) ---
 

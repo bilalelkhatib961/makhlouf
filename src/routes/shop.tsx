@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Products } from "@/components/sections/Products";
-import { publicProductsQuery } from "@/products/queries";
+import { Collections } from "@/components/sections/Collections";
+import { collectionsQuery } from "@/products/queries";
 
 export const Route = createFileRoute("/shop")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(publicProductsQuery),
+  loader: ({ context }) => context.queryClient.ensureQueryData(collectionsQuery("shop")),
   head: () => ({
     meta: [
       { title: "Shop — Makhlouf" },
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/shop")({
           Forged <span className="italic font-light">essentials.</span>
         </h1>
       </div>
-      <Products />
+      <Collections scope="shop" />
     </div>
   ),
 });

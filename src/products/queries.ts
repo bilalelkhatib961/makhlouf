@@ -1,7 +1,9 @@
 import { queryOptions } from "@tanstack/react-query";
-import { getPublicProductsFn } from "./functions";
+import { getPublicCollectionsFn } from "./functions";
 
-export const publicProductsQuery = queryOptions({
-  queryKey: ["public-products"],
-  queryFn: () => getPublicProductsFn(),
-});
+export function collectionsQuery(scope: "landing" | "shop") {
+  return queryOptions({
+    queryKey: ["public-collections", scope],
+    queryFn: () => getPublicCollectionsFn({ data: { onlyLandingPage: scope === "landing" } }),
+  });
+}

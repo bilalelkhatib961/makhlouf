@@ -37,16 +37,18 @@ export function CartSheet() {
                     <div className="flex items-center gap-2">
                       <button
                         aria-label="Decrease quantity"
+                        disabled={item.quantity <= 1}
                         onClick={() => cart.updateQuantity(item.key, item.quantity - 1)}
-                        className="grid h-7 w-7 place-items-center rounded-sm border border-border hover:bg-muted"
+                        className="grid h-7 w-7 place-items-center rounded-sm border border-border hover:bg-muted disabled:opacity-40"
                       >
                         <Minus className="h-3 w-3" />
                       </button>
                       <span className="w-4 text-center text-sm">{item.quantity}</span>
                       <button
                         aria-label="Increase quantity"
+                        disabled={item.quantity >= item.maxQuantity}
                         onClick={() => cart.updateQuantity(item.key, item.quantity + 1)}
-                        className="grid h-7 w-7 place-items-center rounded-sm border border-border hover:bg-muted"
+                        className="grid h-7 w-7 place-items-center rounded-sm border border-border hover:bg-muted disabled:opacity-40"
                       >
                         <Plus className="h-3 w-3" />
                       </button>

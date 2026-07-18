@@ -186,6 +186,15 @@ export function ProductVariantFields({
         </div>
       </div>
 
+      {variant.discount > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Price after discount:{" "}
+          <span className="font-medium text-foreground">
+            ${(variant.sellingPrice - (variant.sellingPrice * variant.discount) / 100).toFixed(2)}
+          </span>
+        </p>
+      )}
+
       <div className="flex items-center justify-between rounded-sm border border-border px-4 py-3">
         <div>
           <p className="text-sm font-medium">Active</p>
