@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Products } from "@/components/sections/Products";
+import { publicProductsQuery } from "@/products/queries";
 
 export const Route = createFileRoute("/shop")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(publicProductsQuery),
   head: () => ({
     meta: [
       { title: "Shop — Makhlouf" },

@@ -24,6 +24,10 @@ dist-ssr
 .env
 .env.*.local
 
+# User-uploaded content (coach product images) — runtime data, not source
+public/uploads/*
+!public/uploads/.gitkeep
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

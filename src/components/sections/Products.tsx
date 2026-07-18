@@ -1,23 +1,46 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { ChevronLeft, ChevronRight, Star, Eye, Plus } from "lucide-react";
-import p1 from "@/assets/product-1.jpg";
-import p2 from "@/assets/product-2.jpg";
-import p3 from "@/assets/product-3.jpg";
-import p4 from "@/assets/product-4.jpg";
+import { ChevronLeft, ChevronRight, Eye, Plus } from "lucide-react";
+import { publicProductsQuery } from "@/products/queries";
+import type { ProductPublic } from "@/products/types";
+import { useCart } from "@/cart/CartContext";
+import { ProductQuickView } from "@/components/ProductQuickView";
 
-const PRODUCTS = [
-  { img: p1, cat: "Supplement", name: "Makhlouf Protein · Isolate", price: 64, rating: 4.9 },
-  { img: p2, cat: "Apparel", name: "Iron Heavyweight Hoodie", price: 128, rating: 4.8 },
-  { img: p3, cat: "Accessory", name: "Pro Lifting Straps", price: 32, rating: 4.9 },
-  { img: p4, cat: "Accessory", name: "Matte Steel Shaker", price: 28, rating: 4.7 },
-  { img: p1, cat: "Program", name: "12-Week Hypertrophy Block", price: 149, rating: 5.0 },
-  { img: p2, cat: "Apparel", name: "Performance Training Tee", price: 58, rating: 4.8 },
-];
+function variantPrice(v: { sellingPrice: number; discount: number }): number {
+  return v.sellingPrice - (v.sellingPrice * v.discount) / 100;
+}
+
+function cheapestVariant(product: ProductPublic) {
+  return product.variants.reduce((min, v) => (variantPrice(v) < variantPrice(min) ? v : min));
+}
 
 export function Products() {
   const scroller = useRef<HTMLDivElement>(null);
   const scrollBy = (d: 1 | -1) => scroller.current?.scrollBy({ left: d * 420, behavior: "smooth" });
+  const cart = useCart();
+  const [quickViewProduct, setQuickViewProduct] = useState<ProductPublic | null>(null);
+
+  const { data: products = [], isLoading } = useQuery(publicProductsQuery);
+
+  const handleAdd = (event: React.MouseEvent, product: ProductPublic) => {
+    event.stopPropagation();
+    if (product.variants.length > 1) {
+      setQuickViewProduct(product);
+      return;
+    }
+    const variant = product.variants[0];
+    const primary = variant.assets.find((a) => a.isPrimary) ?? variant.assets[0];
+    cart.addItem({
+      productId: product.id,
+      variantId: variant.id,
+      variantName: variant.name || undefined,
+      title: product.title,
+      image: primary?.url,
+      unitPrice: variantPrice(variant),
+    });
+    cart.openCart();
+  };
 
   return (
     <section className="relative bg-muted/40 py-28 lg:py-40">
@@ -53,56 +76,92 @@ export function Products() {
         </div>
       </div>
 
+      {!isLoading && products.length === 0 && (
+        <p className="mt-14 px-6 text-sm text-foreground/60 lg:px-10">
+          No products available yet — check back soon.
+        </p>
+      )}
+
       <div
         ref={scroller}
         className="mt-14 flex snap-x snap-mandatory gap-5 overflow-x-auto px-6 pb-4 lg:px-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {PRODUCTS.map((p, i) => (
-          <motion.article
-            key={i}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5, delay: i * 0.05 }}
-            className="group w-[20rem] shrink-0 snap-start bg-background"
-          >
-            <div className="relative aspect-square overflow-hidden bg-muted">
-              <img
-                src={p.img}
-                alt={p.name}
-                loading="lazy"
-                width={800}
-                height={800}
-                className="h-full w-full object-cover grayscale transition-transform duration-700 group-hover:scale-105"
-              />
-              <button
-                aria-label="Quick view"
-                className="absolute right-3 top-3 grid h-10 w-10 translate-y-2 place-items-center rounded-sm bg-background/90 opacity-0 backdrop-blur transition-all group-hover:translate-y-0 group-hover:opacity-100"
-              >
-                <Eye className="h-4 w-4" />
-              </button>
-              <span className="absolute left-3 top-3 bg-foreground px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-background">
-                {p.cat}
-              </span>
-            </div>
-            <div className="p-5">
-              <div className="flex items-center gap-1 text-xs text-foreground/70">
-                <Star className="h-3 w-3 fill-foreground text-foreground" /> {p.rating}
-              </div>
-              <h3 className="mt-2 font-display text-lg leading-tight normal-case tracking-tight">
-                {p.name}
-              </h3>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="font-display text-xl">${p.price}</span>
-                <button className="group/btn inline-flex h-10 items-center gap-2 rounded-sm bg-foreground px-4 text-xs font-medium uppercase tracking-[0.18em] text-background">
-                  <Plus className="h-3.5 w-3.5 transition-transform group-hover/btn:rotate-90" />
-                  Add
+        {products.map((product, i) => {
+          const cheapest = cheapestVariant(product);
+          const primary = cheapest.assets.find((a) => a.isPrimary) ?? cheapest.assets[0];
+          const price = variantPrice(cheapest);
+          const soldOut = product.variants.every((v) => v.quantity === 0);
+          const multiVariant = product.variants.length > 1;
+          return (
+            <motion.article
+              key={product.id}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: i * 0.05 }}
+              onClick={() => setQuickViewProduct(product)}
+              className="group w-[20rem] shrink-0 cursor-pointer snap-start bg-background"
+            >
+              <div className="relative aspect-square overflow-hidden bg-muted">
+                {primary && (
+                  <img
+                    src={primary.url}
+                    alt={product.title}
+                    loading="lazy"
+                    width={800}
+                    height={800}
+                    className="h-full w-full object-cover grayscale transition-transform duration-700 group-hover:scale-105"
+                  />
+                )}
+                <button
+                  aria-label="Quick view"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuickViewProduct(product);
+                  }}
+                  className="absolute right-3 top-3 grid h-10 w-10 translate-y-2 place-items-center rounded-sm bg-background/90 opacity-0 backdrop-blur transition-all group-hover:translate-y-0 group-hover:opacity-100"
+                >
+                  <Eye className="h-4 w-4" />
                 </button>
+                <span className="absolute left-3 top-3 bg-foreground px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-background">
+                  {product.categoryName}
+                </span>
               </div>
-            </div>
-          </motion.article>
-        ))}
+              <div className="p-5">
+                <h3 className="font-display text-lg leading-tight normal-case tracking-tight">
+                  {product.title}
+                </h3>
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-xl">
+                      {multiVariant && "From "}${price.toFixed(2)}
+                    </span>
+                    {cheapest.discount > 0 && (
+                      <span className="text-xs text-muted-foreground line-through">
+                        ${cheapest.sellingPrice.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={(e) => handleAdd(e, product)}
+                    disabled={soldOut}
+                    className="group/btn inline-flex h-10 items-center gap-2 rounded-sm bg-foreground px-4 text-xs font-medium uppercase tracking-[0.18em] text-background disabled:opacity-50"
+                  >
+                    <Plus className="h-3.5 w-3.5 transition-transform group-hover/btn:rotate-90" />
+                    {soldOut ? "Sold Out" : "Add"}
+                  </button>
+                </div>
+              </div>
+            </motion.article>
+          );
+        })}
       </div>
+
+      <ProductQuickView
+        product={quickViewProduct}
+        open={quickViewProduct !== null}
+        onOpenChange={(open) => !open && setQuickViewProduct(null)}
+      />
     </section>
   );
 }

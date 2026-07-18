@@ -28,7 +28,6 @@ import { Route as CoachSchedulesRouteImport } from './routes/coach/schedules'
 import { Route as CoachProductsRouteImport } from './routes/coach/products'
 import { Route as CoachExercisesRouteImport } from './routes/coach/exercises'
 import { Route as CoachClientsRouteImport } from './routes/coach/clients'
-import { Route as CoachCategoriesRouteImport } from './routes/coach/categories'
 
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
@@ -125,11 +124,6 @@ const CoachClientsRoute = CoachClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => CoachRoute,
 } as any)
-const CoachCategoriesRoute = CoachCategoriesRouteImport.update({
-  id: '/categories',
-  path: '/categories',
-  getParentRoute: () => CoachRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -140,7 +134,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/shop': typeof ShopRoute
-  '/coach/categories': typeof CoachCategoriesRoute
   '/coach/clients': typeof CoachClientsRoute
   '/coach/exercises': typeof CoachExercisesRoute
   '/coach/products': typeof CoachProductsRoute
@@ -160,7 +153,6 @@ export interface FileRoutesByTo {
   '/gallery': typeof GalleryRoute
   '/login': typeof LoginRoute
   '/shop': typeof ShopRoute
-  '/coach/categories': typeof CoachCategoriesRoute
   '/coach/clients': typeof CoachClientsRoute
   '/coach/exercises': typeof CoachExercisesRoute
   '/coach/products': typeof CoachProductsRoute
@@ -183,7 +175,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/shop': typeof ShopRoute
-  '/coach/categories': typeof CoachCategoriesRoute
   '/coach/clients': typeof CoachClientsRoute
   '/coach/exercises': typeof CoachExercisesRoute
   '/coach/products': typeof CoachProductsRoute
@@ -207,7 +198,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/portal'
     | '/shop'
-    | '/coach/categories'
     | '/coach/clients'
     | '/coach/exercises'
     | '/coach/products'
@@ -227,7 +217,6 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/login'
     | '/shop'
-    | '/coach/categories'
     | '/coach/clients'
     | '/coach/exercises'
     | '/coach/products'
@@ -249,7 +238,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/portal'
     | '/shop'
-    | '/coach/categories'
     | '/coach/clients'
     | '/coach/exercises'
     | '/coach/products'
@@ -409,18 +397,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoachClientsRouteImport
       parentRoute: typeof CoachRoute
     }
-    '/coach/categories': {
-      id: '/coach/categories'
-      path: '/categories'
-      fullPath: '/coach/categories'
-      preLoaderRoute: typeof CoachCategoriesRouteImport
-      parentRoute: typeof CoachRoute
-    }
   }
 }
 
 interface CoachRouteChildren {
-  CoachCategoriesRoute: typeof CoachCategoriesRoute
   CoachClientsRoute: typeof CoachClientsRoute
   CoachExercisesRoute: typeof CoachExercisesRoute
   CoachProductsRoute: typeof CoachProductsRoute
@@ -430,7 +410,6 @@ interface CoachRouteChildren {
 }
 
 const CoachRouteChildren: CoachRouteChildren = {
-  CoachCategoriesRoute: CoachCategoriesRoute,
   CoachClientsRoute: CoachClientsRoute,
   CoachExercisesRoute: CoachExercisesRoute,
   CoachProductsRoute: CoachProductsRoute,

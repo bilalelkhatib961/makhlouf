@@ -14,3 +14,12 @@ export const authMiddleware = createMiddleware({ type: "function" }).server(asyn
 
   return next({ context: { user } });
 });
+
+// For server functions that mutate coach-owned data (products, categories,
+// clients, schedules, ...). Composes authMiddleware, then also checks role.
+export const coachMiddleware = createMiddleware({ type: "function" })
+  .middleware([authMiddleware])
+  .server(async ({ next, context }) => {
+    if (context.user.role !== "coach") throw new Error("Forbidden");
+    return next();
+  });

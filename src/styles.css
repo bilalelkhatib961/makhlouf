@@ -99,6 +99,11 @@
     letter-spacing: -0.01em;
     text-transform: uppercase;
   }
+  /* Browsers default <button> to cursor:default, unlike <a> — make every
+     clickable control read as clickable. */
+  button:not(:disabled), [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 }
 
 /* Ambient floating shapes */

@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { logoutFn } from "@/auth/functions";
 import type { AppUser } from "@/auth/types";
+import { useCart } from "@/cart/CartContext";
+import { CartSheet } from "@/components/CartSheet";
 
 const NAV = [
   { to: "/", label: "Home" },
@@ -26,6 +28,7 @@ export function Header({ user }: { user: AppUser | null }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const logout = useServerFn(logoutFn);
+  const cart = useCart();
   const portalHome = user?.role === "coach" ? "/coach" : "/portal";
 
   const handleLogout = async () => {
@@ -125,12 +128,15 @@ export function Header({ user }: { user: AppUser | null }) {
           )}
           <button
             aria-label="Cart"
+            onClick={cart.openCart}
             className="relative grid h-10 w-10 place-items-center rounded-sm hover:bg-muted"
           >
             <ShoppingBag className="h-5 w-5" />
-            <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
-              2
-            </span>
+            {cart.totalCount > 0 && (
+              <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
+                {cart.totalCount}
+              </span>
+            )}
           </button>
           <button
             aria-label={open ? "Close menu" : "Open menu"}
@@ -189,6 +195,8 @@ export function Header({ user }: { user: AppUser | null }) {
           </nav>
         </div>
       )}
+
+      <CartSheet />
     </header>
   );
 }

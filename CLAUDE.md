@@ -4,6 +4,12 @@ Living notes for this project. Update this file as we build — it's the shared
 memory between sessions, not a one-time spec. When a task changes something
 described here, edit the relevant section instead of leaving it stale.
 
+**Plan archive**: whenever a non-trivial task goes through a Plan-mode approval,
+save a copy of the approved plan to `versions/YYYY-MM-DD-NN-short-name.md` (NN =
+sequence number for that day) once it's implemented — a point-in-time record for
+re-tracking later, even after this file's "current state" description moves on.
+Don't ask before doing this, just keep it up to date automatically.
+
 ## What this is
 
 A personal training brand site (Makhlouf) evolving from a static marketing
@@ -26,19 +32,23 @@ marketing header/footer.
 
 ## Current status (as of this session)
 
-**Built:** MongoDB-backed auth for two seeded accounts (one coach, one
-client), role-based routing/redirects, and the full navigation shell + static
-dummy-data views for both `/coach` and `/portal`.
+**Built:**
+- MongoDB-backed auth for two seeded accounts (one coach, one client),
+  role-based routing/redirects, full navigation shell for `/coach` and `/portal`.
+- Real, dynamic **Products & Categories**: coach CRUD (with image upload) at
+  `/coach/products` (tabbed), a public shop reading the same live data
+  (`/` and `/shop`), a product quick-view dialog, and a client-side cart
+  (add/edit/remove — **no checkout**). See "Products & Catalog" below.
 
-**Explicitly not built yet** — these are real gaps, not oversights:
-- Any CRUD (add/edit/delete client, product, exercise, schedule entry, meal
-  log, weight entry, etc.) — every list/table in `/coach/*` and `/portal/*`
-  is a hardcoded array in the route file, not a database read.
+**Still hardcoded dummy data — not built yet:**
+- Clients, Subscriptions, Exercises, Schedules in the coach CMS, and Diet,
+  Workouts, Exercises, Weight in the client portal — every list/table on
+  those pages is a hardcoded array in the route file, not a database read.
+  Products/Categories were the first of these to go real; the same
+  read/write/`coachMiddleware` pattern applies when the rest get built.
 - Public signup/registration (only the two seeded accounts exist; the coach
   presumably creates client accounts, but that flow doesn't exist yet).
-- Cart/checkout for the e-shop.
-- `authMiddleware` (see below) exists but nothing uses it yet — no
-  server function currently reads/writes per-user data.
+- Checkout/payment/orders — the cart is real, checkout is explicitly not.
 - CSRF origin-check middleware, rate limiting on login, `/unauthorized` page
   (wrong-role users are just redirected to their own home instead).
 - Password reset.
@@ -69,22 +79,23 @@ architecture notes below and describe how it actually works.
   unauthenticated visitors to `/login?redirect=...` and redirects an
   authenticated-but-wrong-role user to their own home (client hitting
   `/coach` → `/portal`, and vice versa) rather than showing an error page.
-- **`authMiddleware`** (`src/auth/middleware.server.ts`): not used by
-  anything yet. This is the foundation for future protected server
-  functions — route guards protect page UX only, NOT the server function
-  endpoint itself (it's callable directly regardless of which route renders
-  it). Any future `createServerFn` that reads/writes per-user data
-  (add a client, log a meal, log a weight entry, etc.) must add
-  `.middleware([authMiddleware])` and scope its query by
-  `context.user.id`/`role` — don't trust a client-supplied ID alone.
+- **`authMiddleware`** (`src/auth/middleware.server.ts`): attach to any
+  `createServerFn` that reads/writes private data. Route guards protect page
+  UX only, NOT the server function endpoint itself (it's callable directly
+  regardless of which route renders it). There's also **`coachMiddleware`**
+  (same file) — composes `authMiddleware` and additionally checks
+  `role === "coach"`; every products/categories mutation uses it. Follow this
+  pattern for future coach-owned data (clients, subscriptions, exercises,
+  schedules) — don't trust a client-supplied ID alone, scope by
+  `context.user.id`/`role`.
 - **Seed script**: `scripts/seed.ts` (run via `npm run db:seed`), deliberately
   outside `src/` — it's a standalone Node script run through `tsx`, not part
-  of the Vite app bundle.
+  of the Vite app bundle. `scripts/seed-catalog.ts` (`npm run db:seed:catalog`)
+  seeds demo categories/products the same way.
 
 ## Data model
 
-MongoDB, database name `makhlouf` (see `.env` / `MONGODB_DB_NAME`). Only one
-collection exists so far:
+MongoDB, database name `makhlouf` (see `.env` / `MONGODB_DB_NAME`).
 
 ```ts
 // users
@@ -96,13 +107,45 @@ collection exists so far:
   name: string;
   createdAt: Date;
 }
+
+// categories
+{ _id: ObjectId; name: string; createdAt: Date; updatedAt: Date; }
+
+// products
+{
+  _id: ObjectId;
+  categoryId: ObjectId;
+  title: string;
+  description: string;
+  variants: Array<{
+    id: string;            // app-generated (crypto.randomUUID()), not an ObjectId — embedded, not a separate collection
+    name: string;          // coach label, e.g. "M", "Black / L" — "" is valid for a single-SKU product
+    basePrice: number;     // cost — coach-only, never sent to public reads
+    sellingPrice: number;  // list price shown to guests
+    discount: number;      // 0-100, percent off sellingPrice
+    quantity: number;      // stock — per variant
+    isActive: boolean;     // per variant — no product-level isActive
+    assets: Array<{ url: string; type: "image" | "file" | "video"; isPrimary: boolean }>;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
 ```
 
-Everything else (clients list, subscriptions, products, categories,
-exercises, schedules, diet logs, workouts, weight entries) is still just
-static arrays inside the route files — there is no schema for them yet.
-When we build real CRUD for one of these, this is the place to record the
-collection shape once it exists.
+Pricing, stock, active-state, and images all live **per variant**, not on the product — a
+"simple" product (no real size/color choice) is just a product with exactly one variant, name
+left blank. Every product has ≥1 variant, enforced by `productInputSchema`'s
+`z.array(variantSchema).min(1)` in `src/products/functions.ts`. There is no product-level
+`isActive`: public visibility is derived — a product appears only if it has ≥1 active variant,
+and `listProductsPublic` (`src/products/products.server.ts`) returns only the active variants
+(and strips `basePrice`) for each. This was a deliberate correction mid-build (see
+`versions/2026-07-19-03-per-variant-pricing-fixes.md`) after the first cut had pricing/stock/assets
+flat on the product with `variants` as bare option-axis metadata (`{name, options[]}`) — that
+shape is gone.
+
+Clients list, subscriptions, exercises, schedules, diet logs, workouts, and
+weight entries are still just static arrays inside their route files — no
+schema yet. Record the shape here once each one goes real.
 
 ### Seed accounts
 
@@ -113,6 +156,70 @@ running on `127.0.0.1:27017`, no auth). It's idempotent — safe to re-run.
 | ------ | --------------------- | ------------ | ------------- |
 | Coach  | coach@makhlouf.com    | Coach!2025   | Marcus Vale   |
 | Client | client@makhlouf.com   | Client!2025  | Jordan Ellis  |
+
+Run `npm run db:seed:catalog` to populate demo categories + products. Categories
+are idempotent (matched by `name`); products are **not** — the script clears the
+whole `products` collection and reinserts fresh every run, since it's demo data
+and simplest to fully replace on schema changes rather than migrate in place.
+
+## Products & Catalog
+
+- **Server layer** (`src/products/`, same `.server.ts`-suffix pattern as
+  `src/auth/` — see the directory-naming gotcha below): `types.ts` (shared,
+  client-safe), `categories.server.ts`, `products.server.ts` (two read
+  paths — `listProductsPublic` strips `basePrice`/`isActive` and returns only
+  each product's active variants, excluding products left with zero after
+  that filter; `listProductsAdmin` returns everything), `upload.server.ts`,
+  `functions.ts` (the `createServerFn` RPCs — `getPublicProductsFn` is the
+  only one without `coachMiddleware`).
+- **Image upload**: local filesystem, no cloud service. `upload.server.ts`
+  writes to `public/uploads/products/<uuid>.<ext>` (created on first write)
+  via a `FormData`-accepting server function; Vite serves `public/` at `/` in
+  dev and copies it into `dist/client` on build, which nitro's `publicDir`
+  already points at — works with zero extra config. Restricted to image
+  mimetypes for now (`upload.server.ts`'s `EXTENSION_BY_MIME` map). If this
+  ever needs to survive a Cloudflare deploy (see the MongoDB driver caveat
+  above — same underlying problem), local filesystem writes won't work
+  there either; swap for S3/Cloudinary/R2 at that point. New uploads render
+  from an in-browser `URL.createObjectURL(file)` preview, never the raw
+  server URL, inside the coach form — see `ProductVariantFields.tsx`.
+- **Coach CMS** (`/coach/products`): one route, two tabs (shadcn `Tabs`) —
+  Products and Categories — built as `src/components/coach/ProductsTab.tsx`
+  / `CategoriesTab.tsx` / `ProductFormDialog.tsx` / `ProductVariantFields.tsx`
+  (one repeatable block per variant: name, price/discount/quantity, active
+  switch, its own image uploader). Data via TanStack Query; mutations use
+  `useMutation` + `invalidateQueries` so the coach's own edits show up
+  immediately. `ProductFormDialog` deliberately does **not** use
+  `react-hook-form` — the per-variant dynamic arrays with async upload state
+  fit plain `useState` + a manual submit-time check better than RHF's
+  field-array API for this shape (title/description/category are simple
+  controlled inputs, same pattern as `CategoriesTab.tsx`'s form).
+- **Public shop**: `src/components/sections/Products.tsx` (shared by `/` and
+  `/shop`) fetches via `useQuery(publicProductsQuery)` (`src/products/queries.ts`,
+  a shared `queryOptions()` so `index.tsx`/`shop.tsx` can also
+  `ensureQueryData` it in their route `loader` — avoids a loading-state flash
+  on first paint since the data is already in the query cache by the time the
+  component renders). The whole card is clickable (opens
+  `src/components/ProductQuickView.tsx`, the detail dialog with a variant
+  picker keyed by variant `name`, quantity, add to cart) — the "Add"/"Eye"
+  buttons `stopPropagation()` so they don't double-fire the card's own click.
+  Card price shows "From $X" when a product has more than one variant (the
+  cheapest active one). No `useServerFn` wrapper needed for these reads —
+  that wrapper is only required when a server function throws
+  `redirect`/`notFound`, and these just return data.
+- **Cart**: pure client state, not a DB-backed order — guests can use it
+  without an account (`src/cart/CartContext.tsx`, Context + `localStorage`,
+  hydrated post-mount only to avoid SSR mismatches). Mounted in
+  `__root.tsx`'s public branch (same place `Header`/`Footer` render). Line
+  identity is `` `${productId}__${variantId}` ``, so different variants of the
+  same product are separate cart lines. Cart open/close state lives in
+  `CartContext` too (`isOpen`/`openCart`/`closeCart`/`setCartOpen`), not local
+  `useState` in `Header.tsx` — needed so `Products.tsx`/`ProductQuickView.tsx`
+  (neither a descendant of `Header`) can call `cart.openCart()` right after
+  `addItem()` to auto-open the drawer as add-to-cart confirmation.
+  `src/components/CartSheet.tsx` is the slide-over UI, reads `isOpen` directly
+  from `useCart()` (no props). **Checkout is a disabled button, on purpose**
+  — not built yet.
 
 ## Conventions
 
@@ -127,13 +234,14 @@ running on `127.0.0.1:27017`, no auth). It's idempotent — safe to re-run.
   `client: { files: ["**/server/**"] }`, which denies importing *anything*
   under a path containing a `server` segment from client-rendered code, not
   just files suffixed `.server.ts`. This is stricter than the framework's
-  own default (`**/*.server.*`) and it's why auth code lives in `src/auth/`
-  instead: `functions.ts` (no `.server.` suffix) holds the `createServerFn`
-  RPCs that client components legitimately need to import and call
-  (`loginFn`, `logoutFn`), while the true server-only helpers alongside it
-  (`db.server.ts`, `session.server.ts`, `credentials.server.ts`,
-  `middleware.server.ts`) stay protected by the filename-suffix rule. Learned
-  this the hard way once already — don't reintroduce a `server/` directory.
+  own default (`**/*.server.*`) and it's why this code is split into
+  neutrally-named directories instead — `src/auth/` and `src/products/`, each
+  with an unsuffixed `functions.ts` (the `createServerFn` RPCs client
+  components legitimately need to import and call) alongside the true
+  server-only helpers (`*.server.ts`, protected by the filename-suffix rule).
+  `src/lib/db.server.ts` (the shared Mongo client singleton) is imported by
+  both. Learned this the hard way once already — don't reintroduce a
+  `server/` directory anywhere.
 - **Design system**: strict grayscale palette (see `src/styles.css`), `Anton`
   display font (`font-display`, always uppercase) for headings, `Inter` for
   body text, sharp `rounded-sm` corners, `border-foreground/30` hairlines,
@@ -153,6 +261,14 @@ running on `127.0.0.1:27017`, no auth). It's idempotent — safe to re-run.
   though `bun.lock`/`bunfig.toml` exist from the Lovable side — both
   lockfiles are currently present; be aware of drift if you install anything
   new).
+- **Clickable elements show a pointer cursor globally** — `src/styles.css`'s
+  `@layer base` has `button:not(:disabled), [role="button"]:not([aria-disabled="true"])
+  { cursor: pointer }`, since browsers default `<button>` to `cursor: default`
+  (unlike `<a>`). Covers every hand-rolled button site-wide from one place;
+  don't add per-element `cursor-pointer` classes for plain buttons. Non-button
+  clickable elements (like the shop product card, a `<div onClick>`) still
+  need an explicit `cursor-pointer` class since the base-layer rule only
+  targets `<button>`/`role="button"`.
 - Keep `npx tsc --noEmit` and `npx eslint .` at zero errors/warnings — this
   was true before this session and should stay true.
 
@@ -169,3 +285,10 @@ running on `127.0.0.1:27017`, no auth). It's idempotent — safe to re-run.
 - "May add additional [client-tracking] features in the future" — the user
   flagged this explicitly, so don't assume diet/workouts/exercises/weight is
   the final feature set for the client portal.
+- Removing a product asset (or deleting a product entirely) does not delete
+  the underlying file from `public/uploads/products/` — only the DB
+  reference goes away. Fine for now; revisit if disk usage becomes a real
+  concern.
+- No cross-tab/cross-session live sync for shop data — a guest's already-open
+  tab won't see a coach's edit until it refetches (page reload / remount).
+  No websockets/polling built for this; matches the MVP scope of the ask.

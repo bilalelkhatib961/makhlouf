@@ -17,6 +17,7 @@ import { Footer } from "../components/Footer";
 import { AmbientBackground } from "../components/AmbientBackground";
 import { getSessionUserFn } from "../auth/functions";
 import type { AppUser } from "../auth/types";
+import { CartProvider } from "../cart/CartContext";
 
 // Routes under these prefixes render their own secure-app shell
 // (DashboardLayout) instead of the public marketing Header/Footer.
@@ -166,12 +167,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AmbientBackground />
-      <Header user={user} />
-      <main className="relative">
-        <Outlet />
-      </main>
-      <Footer />
+      <CartProvider>
+        <AmbientBackground />
+        <Header user={user} />
+        <main className="relative">
+          <Outlet />
+        </main>
+        <Footer />
+      </CartProvider>
     </QueryClientProvider>
   );
 }

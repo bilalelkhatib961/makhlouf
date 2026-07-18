@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import type { ObjectId } from "mongodb";
-import { getDb } from "./db.server";
+import { getDb } from "@/lib/db.server";
 import type { UserRole } from "./types";
 
 export interface UserDoc {
