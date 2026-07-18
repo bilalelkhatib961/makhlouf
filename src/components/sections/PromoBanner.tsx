@@ -53,7 +53,7 @@ export function PromoBanner() {
             </p>
             <h3 className="mt-3 font-display text-3xl">Elite Coaching</h3>
             <p className="mt-3 text-sm leading-relaxed text-background/70">
-              1:1 programming, weekly check-ins, and access to the full FORGE/01 system.
+              1:1 programming, weekly check-ins, and access to the full Makhlouf system.
             </p>
             <button className="group mt-6 inline-flex items-center gap-2 border-b border-background pb-1 text-sm uppercase tracking-[0.18em]">
               Apply Now

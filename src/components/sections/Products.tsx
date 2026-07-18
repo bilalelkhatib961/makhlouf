@@ -7,7 +7,7 @@ import p3 from "@/assets/product-3.jpg";
 import p4 from "@/assets/product-4.jpg";
 
 const PRODUCTS = [
-  { img: p1, cat: "Supplement", name: "Forge Protein · Isolate", price: 64, rating: 4.9 },
+  { img: p1, cat: "Supplement", name: "Makhlouf Protein · Isolate", price: 64, rating: 4.9 },
   { img: p2, cat: "Apparel", name: "Iron Heavyweight Hoodie", price: 128, rating: 4.8 },
   { img: p3, cat: "Accessory", name: "Pro Lifting Straps", price: 32, rating: 4.9 },
   { img: p4, cat: "Accessory", name: "Matte Steel Shaker", price: 28, rating: 4.7 },

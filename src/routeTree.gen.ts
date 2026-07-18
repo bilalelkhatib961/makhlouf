@@ -10,14 +10,39 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShopRouteImport } from './routes/shop'
+import { Route as PortalRouteImport } from './routes/portal'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as CoachRouteImport } from './routes/coach'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PortalIndexRouteImport } from './routes/portal/index'
+import { Route as CoachIndexRouteImport } from './routes/coach/index'
+import { Route as PortalWorkoutsRouteImport } from './routes/portal/workouts'
+import { Route as PortalWeightRouteImport } from './routes/portal/weight'
+import { Route as PortalExercisesRouteImport } from './routes/portal/exercises'
+import { Route as PortalDietRouteImport } from './routes/portal/diet'
+import { Route as CoachSubscriptionsRouteImport } from './routes/coach/subscriptions'
+import { Route as CoachSchedulesRouteImport } from './routes/coach/schedules'
+import { Route as CoachProductsRouteImport } from './routes/coach/products'
+import { Route as CoachExercisesRouteImport } from './routes/coach/exercises'
+import { Route as CoachClientsRouteImport } from './routes/coach/clients'
+import { Route as CoachCategoriesRouteImport } from './routes/coach/categories'
 
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
   path: '/shop',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortalRoute = PortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
@@ -30,6 +55,11 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CoachRoute = CoachRouteImport.update({
+  id: '/coach',
+  path: '/coach',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -40,42 +70,207 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalIndexRoute = PortalIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PortalRoute,
+} as any)
+const CoachIndexRoute = CoachIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CoachRoute,
+} as any)
+const PortalWorkoutsRoute = PortalWorkoutsRouteImport.update({
+  id: '/workouts',
+  path: '/workouts',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalWeightRoute = PortalWeightRouteImport.update({
+  id: '/weight',
+  path: '/weight',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalExercisesRoute = PortalExercisesRouteImport.update({
+  id: '/exercises',
+  path: '/exercises',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalDietRoute = PortalDietRouteImport.update({
+  id: '/diet',
+  path: '/diet',
+  getParentRoute: () => PortalRoute,
+} as any)
+const CoachSubscriptionsRoute = CoachSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => CoachRoute,
+} as any)
+const CoachSchedulesRoute = CoachSchedulesRouteImport.update({
+  id: '/schedules',
+  path: '/schedules',
+  getParentRoute: () => CoachRoute,
+} as any)
+const CoachProductsRoute = CoachProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => CoachRoute,
+} as any)
+const CoachExercisesRoute = CoachExercisesRouteImport.update({
+  id: '/exercises',
+  path: '/exercises',
+  getParentRoute: () => CoachRoute,
+} as any)
+const CoachClientsRoute = CoachClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => CoachRoute,
+} as any)
+const CoachCategoriesRoute = CoachCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => CoachRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/coach': typeof CoachRouteWithChildren
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
+  '/login': typeof LoginRoute
+  '/portal': typeof PortalRouteWithChildren
   '/shop': typeof ShopRoute
+  '/coach/categories': typeof CoachCategoriesRoute
+  '/coach/clients': typeof CoachClientsRoute
+  '/coach/exercises': typeof CoachExercisesRoute
+  '/coach/products': typeof CoachProductsRoute
+  '/coach/schedules': typeof CoachSchedulesRoute
+  '/coach/subscriptions': typeof CoachSubscriptionsRoute
+  '/portal/diet': typeof PortalDietRoute
+  '/portal/exercises': typeof PortalExercisesRoute
+  '/portal/weight': typeof PortalWeightRoute
+  '/portal/workouts': typeof PortalWorkoutsRoute
+  '/coach/': typeof CoachIndexRoute
+  '/portal/': typeof PortalIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
+  '/login': typeof LoginRoute
   '/shop': typeof ShopRoute
+  '/coach/categories': typeof CoachCategoriesRoute
+  '/coach/clients': typeof CoachClientsRoute
+  '/coach/exercises': typeof CoachExercisesRoute
+  '/coach/products': typeof CoachProductsRoute
+  '/coach/schedules': typeof CoachSchedulesRoute
+  '/coach/subscriptions': typeof CoachSubscriptionsRoute
+  '/portal/diet': typeof PortalDietRoute
+  '/portal/exercises': typeof PortalExercisesRoute
+  '/portal/weight': typeof PortalWeightRoute
+  '/portal/workouts': typeof PortalWorkoutsRoute
+  '/coach': typeof CoachIndexRoute
+  '/portal': typeof PortalIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/coach': typeof CoachRouteWithChildren
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
+  '/login': typeof LoginRoute
+  '/portal': typeof PortalRouteWithChildren
   '/shop': typeof ShopRoute
+  '/coach/categories': typeof CoachCategoriesRoute
+  '/coach/clients': typeof CoachClientsRoute
+  '/coach/exercises': typeof CoachExercisesRoute
+  '/coach/products': typeof CoachProductsRoute
+  '/coach/schedules': typeof CoachSchedulesRoute
+  '/coach/subscriptions': typeof CoachSubscriptionsRoute
+  '/portal/diet': typeof PortalDietRoute
+  '/portal/exercises': typeof PortalExercisesRoute
+  '/portal/weight': typeof PortalWeightRoute
+  '/portal/workouts': typeof PortalWorkoutsRoute
+  '/coach/': typeof CoachIndexRoute
+  '/portal/': typeof PortalIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/contact' | '/gallery' | '/shop'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/coach'
+    | '/contact'
+    | '/gallery'
+    | '/login'
+    | '/portal'
+    | '/shop'
+    | '/coach/categories'
+    | '/coach/clients'
+    | '/coach/exercises'
+    | '/coach/products'
+    | '/coach/schedules'
+    | '/coach/subscriptions'
+    | '/portal/diet'
+    | '/portal/exercises'
+    | '/portal/weight'
+    | '/portal/workouts'
+    | '/coach/'
+    | '/portal/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/contact' | '/gallery' | '/shop'
-  id: '__root__' | '/' | '/about' | '/contact' | '/gallery' | '/shop'
+  to:
+    | '/'
+    | '/about'
+    | '/contact'
+    | '/gallery'
+    | '/login'
+    | '/shop'
+    | '/coach/categories'
+    | '/coach/clients'
+    | '/coach/exercises'
+    | '/coach/products'
+    | '/coach/schedules'
+    | '/coach/subscriptions'
+    | '/portal/diet'
+    | '/portal/exercises'
+    | '/portal/weight'
+    | '/portal/workouts'
+    | '/coach'
+    | '/portal'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/coach'
+    | '/contact'
+    | '/gallery'
+    | '/login'
+    | '/portal'
+    | '/shop'
+    | '/coach/categories'
+    | '/coach/clients'
+    | '/coach/exercises'
+    | '/coach/products'
+    | '/coach/schedules'
+    | '/coach/subscriptions'
+    | '/portal/diet'
+    | '/portal/exercises'
+    | '/portal/weight'
+    | '/portal/workouts'
+    | '/coach/'
+    | '/portal/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  CoachRoute: typeof CoachRouteWithChildren
   ContactRoute: typeof ContactRoute
   GalleryRoute: typeof GalleryRoute
+  LoginRoute: typeof LoginRoute
+  PortalRoute: typeof PortalRouteWithChildren
   ShopRoute: typeof ShopRoute
 }
 
@@ -86,6 +281,20 @@ declare module '@tanstack/react-router' {
       path: '/shop'
       fullPath: '/shop'
       preLoaderRoute: typeof ShopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portal': {
+      id: '/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof PortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gallery': {
@@ -102,6 +311,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/coach': {
+      id: '/coach'
+      path: '/coach'
+      fullPath: '/coach'
+      preLoaderRoute: typeof CoachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -116,14 +332,142 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portal/': {
+      id: '/portal/'
+      path: '/'
+      fullPath: '/portal/'
+      preLoaderRoute: typeof PortalIndexRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/coach/': {
+      id: '/coach/'
+      path: '/'
+      fullPath: '/coach/'
+      preLoaderRoute: typeof CoachIndexRouteImport
+      parentRoute: typeof CoachRoute
+    }
+    '/portal/workouts': {
+      id: '/portal/workouts'
+      path: '/workouts'
+      fullPath: '/portal/workouts'
+      preLoaderRoute: typeof PortalWorkoutsRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/weight': {
+      id: '/portal/weight'
+      path: '/weight'
+      fullPath: '/portal/weight'
+      preLoaderRoute: typeof PortalWeightRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/exercises': {
+      id: '/portal/exercises'
+      path: '/exercises'
+      fullPath: '/portal/exercises'
+      preLoaderRoute: typeof PortalExercisesRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/diet': {
+      id: '/portal/diet'
+      path: '/diet'
+      fullPath: '/portal/diet'
+      preLoaderRoute: typeof PortalDietRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/coach/subscriptions': {
+      id: '/coach/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/coach/subscriptions'
+      preLoaderRoute: typeof CoachSubscriptionsRouteImport
+      parentRoute: typeof CoachRoute
+    }
+    '/coach/schedules': {
+      id: '/coach/schedules'
+      path: '/schedules'
+      fullPath: '/coach/schedules'
+      preLoaderRoute: typeof CoachSchedulesRouteImport
+      parentRoute: typeof CoachRoute
+    }
+    '/coach/products': {
+      id: '/coach/products'
+      path: '/products'
+      fullPath: '/coach/products'
+      preLoaderRoute: typeof CoachProductsRouteImport
+      parentRoute: typeof CoachRoute
+    }
+    '/coach/exercises': {
+      id: '/coach/exercises'
+      path: '/exercises'
+      fullPath: '/coach/exercises'
+      preLoaderRoute: typeof CoachExercisesRouteImport
+      parentRoute: typeof CoachRoute
+    }
+    '/coach/clients': {
+      id: '/coach/clients'
+      path: '/clients'
+      fullPath: '/coach/clients'
+      preLoaderRoute: typeof CoachClientsRouteImport
+      parentRoute: typeof CoachRoute
+    }
+    '/coach/categories': {
+      id: '/coach/categories'
+      path: '/categories'
+      fullPath: '/coach/categories'
+      preLoaderRoute: typeof CoachCategoriesRouteImport
+      parentRoute: typeof CoachRoute
+    }
   }
 }
+
+interface CoachRouteChildren {
+  CoachCategoriesRoute: typeof CoachCategoriesRoute
+  CoachClientsRoute: typeof CoachClientsRoute
+  CoachExercisesRoute: typeof CoachExercisesRoute
+  CoachProductsRoute: typeof CoachProductsRoute
+  CoachSchedulesRoute: typeof CoachSchedulesRoute
+  CoachSubscriptionsRoute: typeof CoachSubscriptionsRoute
+  CoachIndexRoute: typeof CoachIndexRoute
+}
+
+const CoachRouteChildren: CoachRouteChildren = {
+  CoachCategoriesRoute: CoachCategoriesRoute,
+  CoachClientsRoute: CoachClientsRoute,
+  CoachExercisesRoute: CoachExercisesRoute,
+  CoachProductsRoute: CoachProductsRoute,
+  CoachSchedulesRoute: CoachSchedulesRoute,
+  CoachSubscriptionsRoute: CoachSubscriptionsRoute,
+  CoachIndexRoute: CoachIndexRoute,
+}
+
+const CoachRouteWithChildren = CoachRoute._addFileChildren(CoachRouteChildren)
+
+interface PortalRouteChildren {
+  PortalDietRoute: typeof PortalDietRoute
+  PortalExercisesRoute: typeof PortalExercisesRoute
+  PortalWeightRoute: typeof PortalWeightRoute
+  PortalWorkoutsRoute: typeof PortalWorkoutsRoute
+  PortalIndexRoute: typeof PortalIndexRoute
+}
+
+const PortalRouteChildren: PortalRouteChildren = {
+  PortalDietRoute: PortalDietRoute,
+  PortalExercisesRoute: PortalExercisesRoute,
+  PortalWeightRoute: PortalWeightRoute,
+  PortalWorkoutsRoute: PortalWorkoutsRoute,
+  PortalIndexRoute: PortalIndexRoute,
+}
+
+const PortalRouteWithChildren =
+  PortalRoute._addFileChildren(PortalRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  CoachRoute: CoachRouteWithChildren,
   ContactRoute: ContactRoute,
   GalleryRoute: GalleryRoute,
+  LoginRoute: LoginRoute,
+  PortalRoute: PortalRouteWithChildren,
   ShopRoute: ShopRoute,
 }
 export const routeTree = rootRouteImport

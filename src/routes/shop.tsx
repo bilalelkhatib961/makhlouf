@@ -4,12 +4,12 @@ import { Products } from "@/components/sections/Products";
 export const Route = createFileRoute("/shop")({
   head: () => ({
     meta: [
-      { title: "Shop — FORGE/01" },
+      { title: "Shop — Makhlouf" },
       {
         name: "description",
         content: "Curated supplements, apparel, accessories, and training programs.",
       },
-      { property: "og:title", content: "Shop — FORGE/01" },
+      { property: "og:title", content: "Shop — Makhlouf" },
       {
         property: "og:description",
         content: "Curated supplements, apparel, accessories, and training programs.",

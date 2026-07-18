@@ -5,12 +5,12 @@ import { PromoBanner } from "@/components/sections/PromoBanner";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About — FORGE/01" },
+      { title: "About — Makhlouf" },
       {
         name: "description",
         content: "Twelve years of coaching, programming, and obsession with the craft of training.",
       },
-      { property: "og:title", content: "About — FORGE/01" },
+      { property: "og:title", content: "About — Makhlouf" },
       {
         property: "og:description",
         content: "Twelve years of coaching, programming, and obsession with the craft of training.",

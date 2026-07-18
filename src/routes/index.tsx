@@ -8,13 +8,13 @@ import { Products } from "@/components/sections/Products";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "FORGE/01 — Premium Personal Training & Fitness Gear" },
+      { title: "Makhlouf — Premium Personal Training & Fitness Gear" },
       {
         name: "description",
         content:
           "Elite coaching, programs, and gear for athletes who treat discipline as a lifestyle.",
       },
-      { property: "og:title", content: "FORGE/01 — Premium Personal Training" },
+      { property: "og:title", content: "Makhlouf — Premium Personal Training" },
       {
         property: "og:description",
         content:

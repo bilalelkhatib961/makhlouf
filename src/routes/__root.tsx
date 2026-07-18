@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -14,6 +15,12 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
 import { AmbientBackground } from "../components/AmbientBackground";
+import { getSessionUserFn } from "../auth/functions";
+import type { AppUser } from "../auth/types";
+
+// Routes under these prefixes render their own secure-app shell
+// (DashboardLayout) instead of the public marketing Header/Footer.
+const APP_SHELL_PREFIXES = ["/coach", "/portal"];
 
 function NotFoundComponent() {
   return (
@@ -72,18 +79,22 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  beforeLoad: async (): Promise<{ user: AppUser | null }> => {
+    const user = await getSessionUserFn();
+    return { user };
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "FORGE/01 — Premium Personal Training & Performance Gear" },
+      { title: "Makhlouf — Premium Personal Training & Performance Gear" },
       {
         name: "description",
         content:
           "Elite personal training, intelligent programming, and premium fitness gear engineered for athletes who refuse average.",
       },
-      { name: "author", content: "FORGE/01" },
-      { property: "og:title", content: "FORGE/01 — Premium Personal Training & Performance Gear" },
+      { name: "author", content: "Makhlouf" },
+      { property: "og:title", content: "Makhlouf — Premium Personal Training & Performance Gear" },
       {
         property: "og:description",
         content:
@@ -91,7 +102,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "FORGE/01 — Premium Personal Training & Performance Gear" },
+      { name: "twitter:title", content: "Makhlouf — Premium Personal Training & Performance Gear" },
       {
         name: "twitter:description",
         content:
@@ -139,12 +150,24 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
+  const { queryClient, user } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isAppShell = APP_SHELL_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+
+  if (isAppShell) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+      </QueryClientProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
       <AmbientBackground />
-      <Header />
+      <Header user={user} />
       <main className="relative">
         <Outlet />
       </main>

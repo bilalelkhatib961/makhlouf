@@ -11,9 +11,9 @@ export function Footer() {
         <div className="md:col-span-2">
           <div className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-sm bg-background text-foreground font-display text-lg">
-              F
+              M
             </span>
-            <span className="font-display text-xl">FORGE/01</span>
+            <span className="font-display text-xl">Makhlouf</span>
           </div>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-background/60">
             Premium training, programs, and gear engineered for athletes who refuse average.
@@ -45,7 +45,7 @@ export function Footer() {
           <h4 className="font-display text-sm tracking-[0.2em] text-background/70">Contact</h4>
           <ul className="mt-4 space-y-2 text-sm text-background/80">
             <li className="flex items-center gap-2">
-              <Mail className="h-4 w-4" /> hello@forge01.com
+              <Mail className="h-4 w-4" /> hello@makhlouf.com
             </li>
             <li>1 Iron Way, Brooklyn NY</li>
           </ul>
@@ -65,7 +65,7 @@ export function Footer() {
       </div>
       <div className="border-t border-background/10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-6 py-5 text-xs text-background/60 md:flex-row lg:px-10">
-          <p>© {new Date().getFullYear()} FORGE/01. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Makhlouf. All rights reserved.</p>
           <p className="uppercase tracking-[0.2em]">Forged in iron · Built to last</p>
         </div>
       </div>

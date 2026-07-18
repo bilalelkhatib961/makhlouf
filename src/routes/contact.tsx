@@ -4,9 +4,9 @@ import { Mail, MapPin, Phone, ArrowRight } from "lucide-react";
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact — FORGE/01" },
+      { title: "Contact — Makhlouf" },
       { name: "description", content: "Apply for coaching, ask a question, or visit the studio." },
-      { property: "og:title", content: "Contact — FORGE/01" },
+      { property: "og:title", content: "Contact — Makhlouf" },
       {
         property: "og:description",
         content: "Apply for coaching, ask a question, or visit the studio.",
@@ -69,7 +69,7 @@ function ContactPage() {
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0" /> 1 Iron Way, Brooklyn NY 11201
               </li>
               <li className="flex items-start gap-3">
-                <Mail className="mt-0.5 h-4 w-4 shrink-0" /> hello@forge01.com
+                <Mail className="mt-0.5 h-4 w-4 shrink-0" /> hello@makhlouf.com
               </li>
               <li className="flex items-start gap-3">
                 <Phone className="mt-0.5 h-4 w-4 shrink-0" /> +1 (212) 555 0182

@@ -4,12 +4,12 @@ import { Gallery } from "@/components/sections/Gallery";
 export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
-      { title: "Gallery — FORGE/01" },
+      { title: "Gallery — Makhlouf" },
       {
         name: "description",
         content: "Training sessions, transformations, and inside-the-gym moments.",
       },
-      { property: "og:title", content: "Gallery — FORGE/01" },
+      { property: "og:title", content: "Gallery — Makhlouf" },
       {
         property: "og:description",
         content: "Training sessions, transformations, and inside-the-gym moments.",
