@@ -23,13 +23,18 @@ export function Footer() {
         <div>
           <h4 className="font-display text-sm tracking-[0.2em] text-background/70">Explore</h4>
           <ul className="mt-4 space-y-2 text-sm">
-            {["Home", "About", "Gallery", "Shop", "Contact"].map((l) => (
-              <li key={l}>
-                <Link
-                  to={l === "Home" ? "/" : `/${l.toLowerCase()}`}
-                  className="text-background/80 hover:text-background"
-                >
-                  {l}
+            {(
+              [
+                { label: "Home", to: "/" },
+                { label: "About", to: "/about" },
+                { label: "Gallery", to: "/gallery" },
+                { label: "Shop", to: "/shop" },
+                { label: "Contact", to: "/contact" },
+              ] as const
+            ).map((l) => (
+              <li key={l.label}>
+                <Link to={l.to} className="text-background/80 hover:text-background">
+                  {l.label}
                 </Link>
               </li>
             ))}
@@ -39,7 +44,9 @@ export function Footer() {
         <div>
           <h4 className="font-display text-sm tracking-[0.2em] text-background/70">Contact</h4>
           <ul className="mt-4 space-y-2 text-sm text-background/80">
-            <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> hello@forge01.com</li>
+            <li className="flex items-center gap-2">
+              <Mail className="h-4 w-4" /> hello@forge01.com
+            </li>
             <li>1 Iron Way, Brooklyn NY</li>
           </ul>
           <div className="mt-5 flex items-center gap-3">

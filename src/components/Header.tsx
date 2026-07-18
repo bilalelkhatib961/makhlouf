@@ -23,10 +23,11 @@ export function Header() {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${scrolled
-        ? "border-b border-border/60 bg-background/80 backdrop-blur-xl"
-        : "border-b border-transparent bg-transparent"
-        }`}
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
+        scrolled
+          ? "border-b border-border/60 bg-background/80 backdrop-blur-xl"
+          : "border-b border-transparent bg-transparent"
+      }`}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-6 py-4 lg:px-10">
         {/* Logo */}
@@ -66,10 +67,16 @@ export function Header() {
           >
             <UserPlus className="h-4 w-4" /> Join
           </button>
-          <button aria-label="Account" className="grid h-10 w-10 place-items-center rounded-sm hover:bg-muted">
+          <button
+            aria-label="Account"
+            className="grid h-10 w-10 place-items-center rounded-sm hover:bg-muted"
+          >
             <User className="h-5 w-5" />
           </button>
-          <button aria-label="Cart" className="relative grid h-10 w-10 place-items-center rounded-sm hover:bg-muted">
+          <button
+            aria-label="Cart"
+            className="relative grid h-10 w-10 place-items-center rounded-sm hover:bg-muted"
+          >
             <ShoppingBag className="h-5 w-5" />
             <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
               2

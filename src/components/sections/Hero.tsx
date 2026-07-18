@@ -49,8 +49,8 @@ export function Hero() {
           transition={{ duration: 0.7, delay: 0.4 }}
           className="mt-8 max-w-xl text-base leading-relaxed text-foreground/70 sm:text-lg"
         >
-          Elite coaching, intelligent programming, and premium gear — built for the
-          athlete who treats discipline as a lifestyle, not a phase.
+          Elite coaching, intelligent programming, and premium gear — built for the athlete who
+          treats discipline as a lifestyle, not a phase.
         </motion.p>
 
         <motion.div

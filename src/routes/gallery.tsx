@@ -5,9 +5,15 @@ export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
       { title: "Gallery — FORGE/01" },
-      { name: "description", content: "Training sessions, transformations, and inside-the-gym moments." },
+      {
+        name: "description",
+        content: "Training sessions, transformations, and inside-the-gym moments.",
+      },
       { property: "og:title", content: "Gallery — FORGE/01" },
-      { property: "og:description", content: "Training sessions, transformations, and inside-the-gym moments." },
+      {
+        property: "og:description",
+        content: "Training sessions, transformations, and inside-the-gym moments.",
+      },
     ],
   }),
   component: () => (

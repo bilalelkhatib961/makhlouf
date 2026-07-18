@@ -5,9 +5,15 @@ export const Route = createFileRoute("/shop")({
   head: () => ({
     meta: [
       { title: "Shop — FORGE/01" },
-      { name: "description", content: "Curated supplements, apparel, accessories, and training programs." },
+      {
+        name: "description",
+        content: "Curated supplements, apparel, accessories, and training programs.",
+      },
       { property: "og:title", content: "Shop — FORGE/01" },
-      { property: "og:description", content: "Curated supplements, apparel, accessories, and training programs." },
+      {
+        property: "og:description",
+        content: "Curated supplements, apparel, accessories, and training programs.",
+      },
     ],
   }),
   component: () => (

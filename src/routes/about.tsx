@@ -6,9 +6,15 @@ export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
       { title: "About — FORGE/01" },
-      { name: "description", content: "Twelve years of coaching, programming, and obsession with the craft of training." },
+      {
+        name: "description",
+        content: "Twelve years of coaching, programming, and obsession with the craft of training.",
+      },
       { property: "og:title", content: "About — FORGE/01" },
-      { property: "og:description", content: "Twelve years of coaching, programming, and obsession with the craft of training." },
+      {
+        property: "og:description",
+        content: "Twelve years of coaching, programming, and obsession with the craft of training.",
+      },
     ],
   }),
   component: () => (

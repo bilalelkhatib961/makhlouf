@@ -9,12 +9,14 @@ export function PromoBanner() {
         <div className="flex w-max animate-marquee gap-16 whitespace-nowrap font-display text-3xl sm:text-4xl">
           {Array.from({ length: 2 }).map((_, i) => (
             <div key={i} className="flex items-center gap-16">
-              {["STRENGTH", "DISCIPLINE", "HYPERTROPHY", "MOBILITY", "PRECISION", "GRIT"].map((w) => (
-                <span key={w} className="flex items-center gap-16">
-                  {w}
-                  <span className="inline-block h-2 w-2 rounded-full bg-background/40" />
-                </span>
-              ))}
+              {["STRENGTH", "DISCIPLINE", "HYPERTROPHY", "MOBILITY", "PRECISION", "GRIT"].map(
+                (w) => (
+                  <span key={w} className="flex items-center gap-16">
+                    {w}
+                    <span className="inline-block h-2 w-2 rounded-full bg-background/40" />
+                  </span>
+                ),
+              )}
             </div>
           ))}
         </div>
@@ -33,7 +35,8 @@ export function PromoBanner() {
           </p>
           <blockquote className="mt-6 font-display text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">
             &ldquo;You don&apos;t rise to the level of your goals.
-            <span className="italic font-light"> You fall to the level of your systems.</span>&rdquo;
+            <span className="italic font-light"> You fall to the level of your systems.</span>
+            &rdquo;
           </blockquote>
         </motion.div>
 
@@ -45,7 +48,9 @@ export function PromoBanner() {
           className="lg:col-span-4"
         >
           <div className="border border-background/20 p-8">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-background/60">Featured · Membership</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-background/60">
+              Featured · Membership
+            </p>
             <h3 className="mt-3 font-display text-3xl">Elite Coaching</h3>
             <p className="mt-3 text-sm leading-relaxed text-background/70">
               1:1 programming, weekly check-ins, and access to the full FORGE/01 system.

@@ -25,7 +25,10 @@ function NotFoundComponent() {
           This page isn&apos;t part of the program.
         </p>
         <div className="mt-6">
-          <Link to="/" className="inline-flex h-12 items-center justify-center rounded-sm bg-foreground px-6 text-sm font-medium uppercase tracking-[0.18em] text-background">
+          <Link
+            to="/"
+            className="inline-flex h-12 items-center justify-center rounded-sm bg-foreground px-6 text-sm font-medium uppercase tracking-[0.18em] text-background"
+          >
             Back to base
           </Link>
         </div>
@@ -48,12 +51,18 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-sm text-muted-foreground">Reload and try the set again.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset(); }}
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
             className="h-11 rounded-sm bg-foreground px-5 text-sm font-medium uppercase tracking-[0.18em] text-background"
           >
             Try again
           </button>
-          <a href="/" className="h-11 rounded-sm border border-foreground/30 px-5 text-sm font-medium uppercase leading-[2.75rem] tracking-[0.18em]">
+          <a
+            href="/"
+            className="h-11 rounded-sm border border-foreground/30 px-5 text-sm font-medium uppercase leading-[2.75rem] tracking-[0.18em]"
+          >
             Go home
           </a>
         </div>
@@ -68,22 +77,45 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "FORGE/01 — Premium Personal Training & Performance Gear" },
-      { name: "description", content: "Elite personal training, intelligent programming, and premium fitness gear engineered for athletes who refuse average." },
+      {
+        name: "description",
+        content:
+          "Elite personal training, intelligent programming, and premium fitness gear engineered for athletes who refuse average.",
+      },
       { name: "author", content: "FORGE/01" },
       { property: "og:title", content: "FORGE/01 — Premium Personal Training & Performance Gear" },
-      { property: "og:description", content: "Elite personal training, intelligent programming, and premium fitness gear engineered for athletes who refuse average." },
+      {
+        property: "og:description",
+        content:
+          "Elite personal training, intelligent programming, and premium fitness gear engineered for athletes who refuse average.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "FORGE/01 — Premium Personal Training & Performance Gear" },
-      { name: "twitter:description", content: "Elite personal training, intelligent programming, and premium fitness gear engineered for athletes who refuse average." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3cc3d6d3-3525-44c6-b5e6-9f64202d4c74/id-preview-02ef610c--128af0dd-bb8c-4ecf-9c93-227f8201c5da.lovable.app-1781944587407.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3cc3d6d3-3525-44c6-b5e6-9f64202d4c74/id-preview-02ef610c--128af0dd-bb8c-4ecf-9c93-227f8201c5da.lovable.app-1781944587407.png" },
+      {
+        name: "twitter:description",
+        content:
+          "Elite personal training, intelligent programming, and premium fitness gear engineered for athletes who refuse average.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3cc3d6d3-3525-44c6-b5e6-9f64202d4c74/id-preview-02ef610c--128af0dd-bb8c-4ecf-9c93-227f8201c5da.lovable.app-1781944587407.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3cc3d6d3-3525-44c6-b5e6-9f64202d4c74/id-preview-02ef610c--128af0dd-bb8c-4ecf-9c93-227f8201c5da.lovable.app-1781944587407.png",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,

@@ -21,7 +21,10 @@ export function About() {
           className="lg:col-span-5"
         >
           <div className="relative">
-            <div className="absolute -left-3 -top-3 h-full w-full border border-foreground/30" aria-hidden />
+            <div
+              className="absolute -left-3 -top-3 h-full w-full border border-foreground/30"
+              aria-hidden
+            />
             <img
               src={portrait}
               alt="Marcus Vale, head coach"
@@ -32,7 +35,9 @@ export function About() {
             />
             <div className="absolute -bottom-6 left-6 bg-foreground px-5 py-3 text-background">
               <p className="font-display text-sm tracking-[0.2em]">Marcus Vale</p>
-              <p className="text-[10px] uppercase tracking-[0.25em] text-background/70">Head Coach · CSCS</p>
+              <p className="text-[10px] uppercase tracking-[0.25em] text-background/70">
+                Head Coach · CSCS
+              </p>
             </div>
           </div>
         </motion.div>
@@ -47,14 +52,13 @@ export function About() {
           </h2>
           <div className="mt-8 max-w-xl space-y-5 text-base leading-relaxed text-foreground/70">
             <p>
-              I started in a damp basement gym with a single barbell and a notebook.
-              Twelve years later, I&apos;ve coached pro athletes, executives, and
-              everyday people through transformations that stuck.
+              I started in a damp basement gym with a single barbell and a notebook. Twelve years
+              later, I&apos;ve coached pro athletes, executives, and everyday people through
+              transformations that stuck.
             </p>
             <p>
-              My approach blends powerlifting fundamentals, sports science, and a
-              refusal to settle. No gimmicks. No shortcuts. Just clean execution,
-              week after week.
+              My approach blends powerlifting fundamentals, sports science, and a refusal to settle.
+              No gimmicks. No shortcuts. Just clean execution, week after week.
             </p>
           </div>
 

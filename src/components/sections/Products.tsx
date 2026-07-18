@@ -35,10 +35,18 @@ export function Products() {
             </p>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => scrollBy(-1)} aria-label="Previous" className="grid h-12 w-12 place-items-center rounded-sm border border-foreground/30 transition hover:bg-foreground hover:text-background">
+            <button
+              onClick={() => scrollBy(-1)}
+              aria-label="Previous"
+              className="grid h-12 w-12 place-items-center rounded-sm border border-foreground/30 transition hover:bg-foreground hover:text-background"
+            >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <button onClick={() => scrollBy(1)} aria-label="Next" className="grid h-12 w-12 place-items-center rounded-sm border border-foreground/30 transition hover:bg-foreground hover:text-background">
+            <button
+              onClick={() => scrollBy(1)}
+              aria-label="Next"
+              className="grid h-12 w-12 place-items-center rounded-sm border border-foreground/30 transition hover:bg-foreground hover:text-background"
+            >
               <ChevronRight className="h-5 w-5" />
             </button>
           </div>
