@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
-import type { ObjectId } from "mongodb";
+import { MongoServerError, ObjectId } from "mongodb";
 import { getDb } from "@/lib/db.server";
-import type { UserRole } from "./types";
+import type { AppUser, UserRole } from "./types";
 
 export interface UserDoc {
   _id: ObjectId;
@@ -28,4 +28,40 @@ export async function verifyPassword(hash: string | undefined, plain: string): P
 
 export async function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, 12);
+}
+
+// Self-registration — always creates a "client" account (the coach account is
+// singular and pre-seeded, never created through this path).
+export async function createClientUser(
+  email: string,
+  name: string,
+  password: string,
+): Promise<AppUser> {
+  const db = await getDb();
+  const passwordHash = await hashPassword(password);
+  const normalizedEmail = email.toLowerCase();
+  const _id = new ObjectId();
+  try {
+    await db.collection<UserDoc>("users").insertOne({
+      _id,
+      email: normalizedEmail,
+      passwordHash,
+      role: "client",
+      name,
+      createdAt: new Date(),
+    });
+  } catch (err) {
+    if (err instanceof MongoServerError && err.code === 11000) {
+      throw new Error("An account with this email already exists.");
+    }
+    throw err;
+  }
+  return { id: _id.toString(), email: normalizedEmail, name, role: "client" };
+}
+
+export async function updateUserName(userId: string, name: string): Promise<void> {
+  const db = await getDb();
+  await db
+    .collection<UserDoc>("users")
+    .updateOne({ _id: new ObjectId(userId) }, { $set: { name } });
 }

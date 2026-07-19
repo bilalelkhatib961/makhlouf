@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as JoinRouteImport } from './routes/join'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CoachRouteImport } from './routes/coach'
@@ -21,6 +22,7 @@ import { Route as PortalIndexRouteImport } from './routes/portal/index'
 import { Route as CoachIndexRouteImport } from './routes/coach/index'
 import { Route as PortalWorkoutsRouteImport } from './routes/portal/workouts'
 import { Route as PortalWeightRouteImport } from './routes/portal/weight'
+import { Route as PortalSettingsRouteImport } from './routes/portal/settings'
 import { Route as PortalExercisesRouteImport } from './routes/portal/exercises'
 import { Route as PortalDietRouteImport } from './routes/portal/diet'
 import { Route as CoachTrainingRouteImport } from './routes/coach/training'
@@ -45,6 +47,11 @@ const PortalRoute = PortalRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
@@ -90,6 +97,11 @@ const PortalWorkoutsRoute = PortalWorkoutsRouteImport.update({
 const PortalWeightRoute = PortalWeightRouteImport.update({
   id: '/weight',
   path: '/weight',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalSettingsRoute = PortalSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalExercisesRoute = PortalExercisesRouteImport.update({
@@ -149,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/coach': typeof CoachRouteWithChildren
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
+  '/join': typeof JoinRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/shop': typeof ShopRoute
@@ -161,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/coach/training': typeof CoachTrainingRoute
   '/portal/diet': typeof PortalDietRoute
   '/portal/exercises': typeof PortalExercisesRoute
+  '/portal/settings': typeof PortalSettingsRoute
   '/portal/weight': typeof PortalWeightRoute
   '/portal/workouts': typeof PortalWorkoutsRoute
   '/coach/': typeof CoachIndexRoute
@@ -172,6 +186,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
+  '/join': typeof JoinRoute
   '/login': typeof LoginRoute
   '/shop': typeof ShopRoute
   '/coach/clients': typeof CoachClientsRoute
@@ -183,6 +198,7 @@ export interface FileRoutesByTo {
   '/coach/training': typeof CoachTrainingRoute
   '/portal/diet': typeof PortalDietRoute
   '/portal/exercises': typeof PortalExercisesRoute
+  '/portal/settings': typeof PortalSettingsRoute
   '/portal/weight': typeof PortalWeightRoute
   '/portal/workouts': typeof PortalWorkoutsRoute
   '/coach': typeof CoachIndexRoute
@@ -196,6 +212,7 @@ export interface FileRoutesById {
   '/coach': typeof CoachRouteWithChildren
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
+  '/join': typeof JoinRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/shop': typeof ShopRoute
@@ -208,6 +225,7 @@ export interface FileRoutesById {
   '/coach/training': typeof CoachTrainingRoute
   '/portal/diet': typeof PortalDietRoute
   '/portal/exercises': typeof PortalExercisesRoute
+  '/portal/settings': typeof PortalSettingsRoute
   '/portal/weight': typeof PortalWeightRoute
   '/portal/workouts': typeof PortalWorkoutsRoute
   '/coach/': typeof CoachIndexRoute
@@ -222,6 +240,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/contact'
     | '/gallery'
+    | '/join'
     | '/login'
     | '/portal'
     | '/shop'
@@ -234,6 +253,7 @@ export interface FileRouteTypes {
     | '/coach/training'
     | '/portal/diet'
     | '/portal/exercises'
+    | '/portal/settings'
     | '/portal/weight'
     | '/portal/workouts'
     | '/coach/'
@@ -245,6 +265,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/contact'
     | '/gallery'
+    | '/join'
     | '/login'
     | '/shop'
     | '/coach/clients'
@@ -256,6 +277,7 @@ export interface FileRouteTypes {
     | '/coach/training'
     | '/portal/diet'
     | '/portal/exercises'
+    | '/portal/settings'
     | '/portal/weight'
     | '/portal/workouts'
     | '/coach'
@@ -268,6 +290,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/contact'
     | '/gallery'
+    | '/join'
     | '/login'
     | '/portal'
     | '/shop'
@@ -280,6 +303,7 @@ export interface FileRouteTypes {
     | '/coach/training'
     | '/portal/diet'
     | '/portal/exercises'
+    | '/portal/settings'
     | '/portal/weight'
     | '/portal/workouts'
     | '/coach/'
@@ -293,6 +317,7 @@ export interface RootRouteChildren {
   CoachRoute: typeof CoachRouteWithChildren
   ContactRoute: typeof ContactRoute
   GalleryRoute: typeof GalleryRoute
+  JoinRoute: typeof JoinRoute
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRouteWithChildren
   ShopRoute: typeof ShopRoute
@@ -319,6 +344,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gallery': {
@@ -382,6 +414,13 @@ declare module '@tanstack/react-router' {
       path: '/weight'
       fullPath: '/portal/weight'
       preLoaderRoute: typeof PortalWeightRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/settings': {
+      id: '/portal/settings'
+      path: '/settings'
+      fullPath: '/portal/settings'
+      preLoaderRoute: typeof PortalSettingsRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/exercises': {
@@ -486,6 +525,7 @@ const CoachRouteWithChildren = CoachRoute._addFileChildren(CoachRouteChildren)
 interface PortalRouteChildren {
   PortalDietRoute: typeof PortalDietRoute
   PortalExercisesRoute: typeof PortalExercisesRoute
+  PortalSettingsRoute: typeof PortalSettingsRoute
   PortalWeightRoute: typeof PortalWeightRoute
   PortalWorkoutsRoute: typeof PortalWorkoutsRoute
   PortalIndexRoute: typeof PortalIndexRoute
@@ -494,6 +534,7 @@ interface PortalRouteChildren {
 const PortalRouteChildren: PortalRouteChildren = {
   PortalDietRoute: PortalDietRoute,
   PortalExercisesRoute: PortalExercisesRoute,
+  PortalSettingsRoute: PortalSettingsRoute,
   PortalWeightRoute: PortalWeightRoute,
   PortalWorkoutsRoute: PortalWorkoutsRoute,
   PortalIndexRoute: PortalIndexRoute,
@@ -508,6 +549,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoachRoute: CoachRouteWithChildren,
   ContactRoute: ContactRoute,
   GalleryRoute: GalleryRoute,
+  JoinRoute: JoinRoute,
   LoginRoute: LoginRoute,
   PortalRoute: PortalRouteWithChildren,
   ShopRoute: ShopRoute,

@@ -1,5 +1,12 @@
 import { createFileRoute, redirect, Outlet } from "@tanstack/react-router";
-import { LayoutDashboard, Utensils, Dumbbell, ListChecks, TrendingUp } from "lucide-react";
+import {
+  LayoutDashboard,
+  Utensils,
+  Dumbbell,
+  ListChecks,
+  TrendingUp,
+  Settings,
+} from "lucide-react";
 import { DashboardLayout, type DashboardNavItem } from "@/components/dashboard/DashboardLayout";
 
 const NAV_ITEMS: DashboardNavItem[] = [
@@ -8,6 +15,7 @@ const NAV_ITEMS: DashboardNavItem[] = [
   { to: "/portal/workouts", label: "Workouts", icon: Dumbbell },
   { to: "/portal/exercises", label: "Exercises", icon: ListChecks },
   { to: "/portal/weight", label: "Weight", icon: TrendingUp },
+  { to: "/portal/settings", label: "Settings", icon: Settings },
 ];
 
 export const Route = createFileRoute("/portal")({

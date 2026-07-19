@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { addMonths } from "date-fns";
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
 import { getCoachClientDetailFn } from "@/clients/functions";
 import { splitProgress, type SplitAssignmentStatus } from "@/clients/progress";
 import type { SplitAssignment } from "@/clients/types";
 import type { DietPlanAssignment } from "@/diet/types";
+import type { SubscriptionAssignment } from "@/subscriptions/types";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +23,7 @@ import {
 import { ClientProfileFormDialog } from "@/components/coach/ClientProfileFormDialog";
 import { AssignSplitDialog } from "@/components/coach/AssignSplitDialog";
 import { AssignDietPlanDialog } from "@/components/coach/AssignDietPlanDialog";
+import { AssignPackageDialog } from "@/components/coach/AssignPackageDialog";
 
 export const Route = createFileRoute("/coach/clients_/$clientId")({
   component: ClientDetailPage,
@@ -80,6 +83,19 @@ function DietAssignmentRow({ assignment }: { assignment: DietPlanAssignment }) {
   );
 }
 
+function SubscriptionAssignmentRow({ assignment }: { assignment: SubscriptionAssignment }) {
+  const activeUntil = addMonths(new Date(assignment.startDate), assignment.durationMonths);
+  return (
+    <TableRow>
+      <TableCell className="font-medium">{assignment.packageName}</TableCell>
+      <TableCell className="text-muted-foreground">{formatDate(assignment.startDate)}</TableCell>
+      <TableCell className="text-muted-foreground">
+        {formatDate(activeUntil.toISOString())}
+      </TableCell>
+    </TableRow>
+  );
+}
+
 function ClientDetailPage() {
   const { clientId } = Route.useParams();
   const detailQuery = useQuery({
@@ -89,6 +105,7 @@ function ClientDetailPage() {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [assignSplitOpen, setAssignSplitOpen] = useState(false);
   const [assignDietPlanOpen, setAssignDietPlanOpen] = useState(false);
+  const [assignPackageOpen, setAssignPackageOpen] = useState(false);
 
   if (detailQuery.isLoading || !detailQuery.data) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -224,6 +241,36 @@ function ClientDetailPage() {
             <p className="mt-6 text-sm text-muted-foreground">No diet plan assigned yet.</p>
           )}
         </div>
+
+        <div className="border border-border p-6">
+          <div className="flex items-start justify-between gap-4">
+            <p className="font-display text-xl">Subscription</p>
+            <button
+              onClick={() => setAssignPackageOpen(true)}
+              className="inline-flex h-9 items-center gap-2 rounded-sm bg-foreground px-4 text-xs font-medium uppercase tracking-[0.18em] text-background"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {client.currentSubscription ? "Replace Package" : "Assign Package"}
+            </button>
+          </div>
+
+          {client.currentSubscription ? (
+            <div className="mt-6">
+              <p className="text-lg font-medium">{client.currentSubscription.packageName}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                ${client.currentSubscription.price.toFixed(2)}/mo · Active until{" "}
+                {formatDate(
+                  addMonths(
+                    new Date(client.currentSubscription.startDate),
+                    client.currentSubscription.durationMonths,
+                  ).toISOString(),
+                )}
+              </p>
+            </div>
+          ) : (
+            <p className="mt-6 text-sm text-muted-foreground">No package assigned yet.</p>
+          )}
+        </div>
       </div>
 
       <div className="mt-12">
@@ -280,6 +327,33 @@ function ClientDetailPage() {
         </div>
       </div>
 
+      <div className="mt-12">
+        <h2 className="font-display text-2xl">Subscription History</h2>
+        <div className="mt-4 border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Package</TableHead>
+                <TableHead>Start Date</TableHead>
+                <TableHead>Active Until</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {client.subscriptionHistory.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="py-8 text-center text-muted-foreground">
+                    No previous subscriptions.
+                  </TableCell>
+                </TableRow>
+              )}
+              {client.subscriptionHistory.map((assignment) => (
+                <SubscriptionAssignmentRow key={assignment.id} assignment={assignment} />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
       <ClientProfileFormDialog
         open={editProfileOpen}
         onOpenChange={setEditProfileOpen}
@@ -294,6 +368,11 @@ function ClientDetailPage() {
       <AssignDietPlanDialog
         open={assignDietPlanOpen}
         onOpenChange={setAssignDietPlanOpen}
+        clientId={client.id}
+      />
+      <AssignPackageDialog
+        open={assignPackageOpen}
+        onOpenChange={setAssignPackageOpen}
         clientId={client.id}
       />
     </div>

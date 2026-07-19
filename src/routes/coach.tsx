@@ -17,8 +17,8 @@ const NAV_ITEMS: DashboardNavItem[] = [
   { to: "/coach/training", label: "Training", icon: Dumbbell },
   { to: "/coach/diet", label: "Diet", icon: Utensils },
   { to: "/coach/galleries", label: "Galleries", icon: Images },
+  { to: "/coach/subscriptions", label: "Subscriptions", icon: CreditCard },
   { to: "/coach", label: "Dashboard", icon: LayoutDashboard, status: "todo" },
-  { to: "/coach/subscriptions", label: "Subscriptions", icon: CreditCard, status: "todo" },
   { to: "/coach/schedules", label: "Schedules", icon: Calendar, status: "todo" },
 ];
 

@@ -1,4 +1,5 @@
 import type { DietPlanAssignment } from "@/diet/types";
+import type { SubscriptionAssignment } from "@/subscriptions/types";
 
 export interface ClientProfile {
   dob: string | null; // ISO date string
@@ -25,11 +26,13 @@ export interface ClientListItem {
   profile: ClientProfile;
   currentAssignment: SplitAssignment | null;
   currentDietPlan: DietPlanAssignment | null;
+  currentSubscription: SubscriptionAssignment | null;
 }
 
 export interface ClientDetail extends ClientListItem {
   history: SplitAssignment[]; // every assignment except currentAssignment, desc by startDate
   dietPlanHistory: DietPlanAssignment[]; // every diet assignment except currentDietPlan
+  subscriptionHistory: SubscriptionAssignment[]; // every subscription assignment except currentSubscription
 }
 
 export interface ClientProfileInput {

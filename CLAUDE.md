@@ -63,23 +63,52 @@ marketing header/footer.
   gallery-switcher letting a visitor pick which named gallery is active, and
   a lightbox with prev/next navigation between that gallery's images. See
   "Galleries" below.
+- Real, dynamic **Subscriptions**: exactly two fixed packages (Basic/
+  Premium), coach-editable **price only** (name/duration/benefits are seeded
+  and never exposed as editable) at `/coach/subscriptions`, assignable to a
+  client from their detail page (current package + "Active until" date +
+  history, mirrors the Diet Plan card). Also ships the first piece of
+  **public self-registration**: `/join` is now a 2-step wizard — package +
+  name/email/password/**phone** (all required) on step 1, then an optional
+  step 2 (dob/height/weight/nationality/profile picture, explicitly skippable
+  — "you can always update this later from your portal settings") — creating
+  a client account with no payment step, answering the "no public signup
+  exists" open question below (guest signup now exists; coach-created client
+  accounts still don't). See "Subscriptions" below.
+- **Client self-service settings**: `/portal/settings` lets a logged-in
+  client edit their own name and the same profile fields a coach can edit
+  from the client detail page (dob/weight/height/phone/nationality/profile
+  picture) — the first client-facing (not coach-facing) data-editing surface
+  in the app. See "Clients & Split Assignments" below.
+- **Functional contact form**: `/contact` now actually submits — stored in a
+  new `contactMessages` collection, no coach-facing inbox yet. See "Contact"
+  below.
+- Header's account icon (when logged in) and both dashboard shells'
+  sidebars were simplified: the icon now navigates straight to `/coach` or
+  `/portal` instead of opening a dropdown, and the sidebar no longer shows a
+  "{name} / {role} account" card above the Site/Log out buttons. The
+  Founder's Note membership card on the homepage (`PromoBanner.tsx`) now
+  links to `/join` instead of being a dead "Apply Now" button.
 
 **Still hardcoded dummy data — not built yet:**
-- Dashboard, Subscriptions, Schedules in the coach CMS, and Diet, Workouts,
-  Exercises, Weight **in the client portal** (`/portal/*` — a client's own
-  self-tracking view; unrelated to the coach's new `/coach/diet` management
-  system above, which is real) — every list/table on those pages is a
-  hardcoded array in the route file, not a database read. The three coach
-  pages are flagged under an "Uncompleted" heading in the `/coach` sidebar
-  (see "Conventions" below) specifically so they're not mistaken for done.
-  Products/Categories, Training, Clients, and now Diet were the first of
+- Dashboard, Schedules in the coach CMS, and Diet, Workouts, Exercises,
+  Weight **in the client portal** (`/portal/*` — a client's own self-tracking
+  view; unrelated to the coach's `/coach/diet` management system, which is
+  real) — every list/table on those pages is a hardcoded array in the route
+  file, not a database read. These two coach pages are flagged under an
+  "Uncompleted" heading in the `/coach` sidebar (see "Conventions" below)
+  specifically so they're not mistaken for done. Products/Categories,
+  Training, Clients, Diet, Galleries, and now Subscriptions were the first of
   these to go real; the same read/write/`coachMiddleware` pattern applies
   when the rest get built.
-- Public signup/registration (only the originally-seeded coach/client
-  accounts exist as "real" logins; `scripts/seed-clients.ts` adds more client
-  accounts but only via a seed script, not a coach-facing "create client" UI
-  flow — that still doesn't exist).
+- A coach-facing "create client" UI flow (clients can now self-register via
+  `/join`, but the coach still has no button to create/invite one directly —
+  `scripts/seed-clients.ts` remains the only other way to add one).
 - Checkout/payment/orders — the cart is real, checkout is explicitly not.
+  `/join`'s account-creation flow is likewise payment-free by design (see
+  "Subscriptions" below) — picking a package doesn't charge anything yet.
+- A coach-facing inbox for `/contact` submissions — messages are stored in
+  `contactMessages` (see "Contact" below) but nothing reads them back yet.
 - CSRF origin-check middleware, rate limiting on login, `/unauthorized` page
   (wrong-role users are just redirected to their own home instead).
 - Password reset.
@@ -107,8 +136,10 @@ architecture notes below and describe how it actually works.
   constant so a login attempt against a nonexistent email takes the same
   time as a wrong-password attempt.
 - **Server functions** (`src/auth/functions.ts`): `loginFn`,
-  `logoutFn`, `getSessionUserFn`. Login rotates the session (clears, then
-  reissues) on every successful auth.
+  `logoutFn`, `getSessionUserFn`, and `joinFn` (public self-registration —
+  see "Subscriptions" below). Login/join both rotate the session (clear,
+  then reissue) on every successful auth, same `session.clear()` +
+  `session.update()` pair.
 - **Route guards**: `src/routes/__root.tsx`'s `beforeLoad` calls
   `getSessionUserFn()` once and puts `{ user }` into router context. Every
   route sees it via `Route.useRouteContext()`. `coach.tsx` and `portal.tsx`
@@ -124,13 +155,16 @@ architecture notes below and describe how it actually works.
   `role === "coach"`; every products/categories mutation uses it, every
   training mutation (`src/training/functions.ts`) reuses it verbatim, and so
   does every client mutation (`src/clients/functions.ts`), every diet
-  mutation (`src/diet/functions.ts`), and every gallery mutation
-  (`src/galleries/functions.ts`). Follow this pattern for future
-  coach-owned data (subscriptions, schedules) — don't trust a client-supplied
-  ID alone, scope by `context.user.id`/`role`. `src/clients/clients.server.ts`/
-  `assignments.server.ts`/`src/diet/diet-assignments.server.ts` go one step
-  further and re-check `role === "client"` on the target user too, so a coach
-  can't accidentally attach a profile/assignment to another coach account.
+  mutation (`src/diet/functions.ts`), every gallery mutation
+  (`src/galleries/functions.ts`), and every subscription mutation
+  (`src/subscriptions/functions.ts`) except `getPublicPackagesFn` (public,
+  no auth — guests need it on `/join`). Follow this pattern for future
+  coach-owned data (schedules) — don't trust a client-supplied ID alone,
+  scope by `context.user.id`/`role`. `src/clients/clients.server.ts`/
+  `assignments.server.ts`/`src/diet/diet-assignments.server.ts`/
+  `src/subscriptions/assignments.server.ts` go one step further and re-check
+  `role === "client"` on the target user too, so a coach can't accidentally
+  attach a profile/assignment to another coach account.
 - **Seed script**: `scripts/seed.ts` (run via `npm run db:seed`), deliberately
   outside `src/` — it's a standalone Node script run through `tsx`, not part
   of the Vite app bundle. `scripts/seed-catalog.ts` (`npm run db:seed:catalog`)
@@ -143,6 +177,9 @@ architecture notes below and describe how it actually works.
   clients — depends on `db:seed:clients` (needs profiles) having already run.
   `scripts/seed-galleries.ts` (`npm run db:seed:galleries`) seeds four demo
   photo galleries, no dependency on the other seed scripts.
+  `scripts/seed-subscriptions.ts` (`npm run db:seed:subscriptions`) upserts
+  the two fixed packages and assigns them to seeded clients — depends on
+  `db:seed:clients` having already run.
 
 ## Data model
 
@@ -312,6 +349,37 @@ MongoDB, database name `makhlouf` (see `.env` / `MONGODB_DB_NAME`).
   createdAt: Date;
   updatedAt: Date;
 }
+
+// subscriptionPackages — always exactly 2 docs (basic/premium), seeded once
+{
+  _id: ObjectId;
+  slug: "basic" | "premium";   // fixed identity
+  name: string;                 // fixed, e.g. "Basic"
+  price: number;                 // the ONLY coach-editable field
+  durationMonths: number;       // fixed at 1, never exposed as editable
+  benefits: string[];           // fixed, seeded, never exposed as editable
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// subscriptionAssignments — append-only history, mirrors dietPlanAssignments
+{
+  _id: ObjectId;
+  clientId: ObjectId;
+  packageId: ObjectId;
+  startDate: Date;
+  createdAt: Date;
+}
+
+// contactMessages — guest submissions from /contact, write-only for now (no coach-facing read)
+{
+  _id: ObjectId;
+  name: string;
+  email: string;
+  phone: string | null;
+  message: string;
+  createdAt: Date;
+}
 ```
 
 Diet plans have **no `durationWeeks`/progress-bar**, unlike splits — a diet
@@ -320,6 +388,17 @@ plan isn't a time-boxed program the way a split is. "Current vs. history" for
 but the client detail page just shows "Assigned since {date}", and
 `AssignDietPlanDialog` never needed the in-progress/replace-with-radio-choice
 logic `AssignSplitDialog` has, since there's no progress to discard or keep.
+
+Subscription packages are **not** full CRUD like everything else in this app
+— there are always exactly 2, and the coach can only ever edit `price`.
+`src/subscriptions/packages.server.ts` enforces this with the function
+signature itself: `updatePackagePrice(id, price)`, not a generic
+`updatePackage(id, input)` — there's no code path that could touch
+name/duration/benefits after seeding. "Active until" for a
+`subscriptionAssignment` is computed on the fly as `startDate +
+durationMonths` (via date-fns' `addMonths`) — no stored/cached expiry, no
+status badge or enforcement, matching the explicit "nothing functional for
+now" scope for this feature (see "Subscriptions" below).
 
 Pricing, stock, active-state, and images all live **per variant**, not on the product — a
 "simple" product (no real size/color choice) is just a product with exactly one variant, name
@@ -639,6 +718,25 @@ dummy data" above), only the seed scripts add more.
   `activeOptions={{ exact: true }}` to every nav `Link` — the component
   already computed its own `isActive` for styling via `useLocation`, this
   just stops the router's *own* indicator from disagreeing with it.
+- **Client self-service** (`/portal/settings`, `src/routes/portal/settings.tsx`): the first
+  client-facing (not coach-facing) data-editing surface. Reuses the exact field set
+  `ClientProfileFormDialog.tsx` established (profile picture / dob / weight / height / phone /
+  nationality) plus a new Name field, inlined on the page rather than a dialog (used in exactly one
+  place, so no shared component was extracted). New RPCs in `src/clients/functions.ts`, all
+  `authMiddleware` rather than `coachMiddleware` — self-service, no role check beyond "logged in";
+  the underlying `upsertClientProfile` already throws "Client not found" for a non-client caller, so
+  it's naturally self-limiting without an extra guard: `getOwnClientProfileFn` (calls a new
+  `getOwnProfile(userId)` in `clients.server.ts`, the same shape as the relevant slice of
+  `getClientDetail` minus assignment history), `updateOwnClientProfileFn` (upserts the profile,
+  then updates `users.name` via a new `updateUserName` in `credentials.server.ts`, then refreshes
+  the session via `getAuthSession().update(...)` so a changed name shows up immediately without a
+  re-login — same `session.update` mechanism `loginFn`/`joinFn` use, just without the `clear()`
+  first since this isn't a privilege change), `uploadOwnProfilePictureFn` (same
+  `saveClientProfilePicture` upload handler as the coach one, just `authMiddleware` instead of
+  `coachMiddleware`). A separate `uploadJoinProfilePictureFn` (no middleware at all, public) exists
+  for `/join`'s step 2 — a join-flow visitor has no session yet to gate on, and the handler only
+  writes a file to disk and returns its URL (no DB write), the same low-risk shape as every other
+  upload endpoint in this app. `/portal`'s `NAV_ITEMS` gained a "Settings" entry.
 - **Seed data**: `scripts/seed-clients.ts` — see "Seed accounts" above. Each
   of the 5 seeded clients demonstrates a different state on purpose: Jordan
   Ellis (full profile, one completed + one in-progress assignment), Casey
@@ -757,6 +855,104 @@ gallery document, there's no separate cross-referenced entity to CRUD.
   `showOnLandingPage: true`. Demo data, cleared and reinserted fresh every run, same reasoning as
   `seed-training.ts`.
 
+## Subscriptions
+
+Two fixed packages (Basic/Premium) a client can be on, plus the first public self-registration flow
+in the app. Deliberately **not** full CRUD, unlike everything else built so far — see the "coach can
+only edit price" note under "Data model" above. Nothing here is functional beyond the packages
+themselves and assigning them: no payment, no gating of client-portal features by package, no
+booking/calendar system (Premium's benefit copy describes booking a session on the coach's calendar,
+but that calendar doesn't exist yet).
+
+- **Server layer** (`src/subscriptions/`, mirrors `src/diet/`): `types.ts` (shared, client-safe),
+  `packages.server.ts` (`listPackages()` — one shape serves public + admin reads, nothing sensitive
+  to strip; `updatePackagePrice(id, price)` — see above for why this isn't a generic update),
+  `assignments.server.ts` (`listSubscriptionAssignmentsForClient`, `assignPackage` — same
+  target-user `role: "client"` + target-entity-exists guard as `src/diet/diet-assignments.server.ts`),
+  `functions.ts` (`getPublicPackagesFn` is the only public RPC — the Join page needs it before the
+  visitor has an account; the rest are `coachMiddleware`), `queries.ts` (`packagesQuery()`, same
+  `queryOptions()` factory shape as `collectionsQuery`/`galleriesQuery`, used by `/join`'s loader).
+- **Coach CMS** (`/coach/subscriptions`): no tabs, no "Add Package"/delete actions — just the 2
+  packages as cards (name, price, "1 month" badge, benefits list) each with a single **Edit Price**
+  button → `EditPackagePriceDialog.tsx` (one number input, nothing else). `coach.tsx`'s `NAV_ITEMS`
+  no longer marks this `status: "todo"`.
+- **Client detail page**: a third card in the existing split/diet-plan grid row — package name,
+  price, "Active until {date}", **Assign/Replace Package** → `AssignPackageDialog.tsx` (`Select` a
+  package + the same date-picker `AssignSplitDialog`/`AssignDietPlanDialog` use, defaulting to
+  today) — plus a "Subscription History" table below the existing Split/Diet History tables.
+  `src/clients/types.ts`/`clients.server.ts` carry `currentSubscription`/`subscriptionHistory`,
+  wired in exactly the way diet was added the round before.
+- **Public "Join Us" flow** (`src/routes/join.tsx`): loader `ensureQueryData`s `packagesQuery()`
+  (same SSR-prefetch pattern as `shop.tsx`), redirects an already-logged-in visitor to their role
+  home (the guard lives *inside* the `loader`, not a separate `beforeLoad` — combining `loader` +
+  `beforeLoad` on the same route hit a TanStack Router generic-inference issue this version doesn't
+  handle cleanly, "Type 'void' is not assignable to type 'never'"; folding the redirect check into
+  `loader` sidesteps it and is what every other route with a loader in this app already does). Now
+  a **2-step wizard**, same component throughout (no remount — state persists across steps): step 1
+  is the 2 packages as clickable cards (click to select, highlighted `bg-foreground` when chosen)
+  above name/email/password/confirm-password/**phone** (all required, styled identically to
+  `login.tsx`'s underlined-input fields); a "Next" button validates via
+  `formRef.current?.reportValidity()` (only step-1 fields are mounted at that point, so it only
+  checks those) plus a manual password-match check, then advances to step 2 — dob (Popover+Calendar,
+  same as `ClientProfileFormDialog.tsx` but styled as an underlined trigger to match the rest of the
+  page), height, weight, nationality, profile picture (same circular blob-preview `ImagePlus`
+  picker), all **optional** with explicit copy that it can be filled in later from
+  `/portal/settings` — see "Clients & Split Assignments" above. Final submit calls the extended
+  `joinFn` (`src/auth/functions.ts` — creates the user via `createClientUser`, then
+  `upsertClientProfile` with the phone + optional fields, then `assignPackage`, then sets the
+  session exactly like `loginFn` does) and redirects to `/portal` on success. The `joinFn` validator
+  reuses `clientProfileInputSchema` from `src/clients/functions.ts` (now exported) via
+  `.omit({ phone: true })` merged with a local schema that makes `phone` required instead of
+  nullable — one schema, not two hand-maintained copies of the optional-field shape. Signing up
+  with an email that's already in the unique index surfaces "An account with this email already
+  exists" (caught via `MongoServerError`'s `code === 11000`) instead of a raw crash.
+  `src/components/Header.tsx`'s two static "Join" buttons (desktop + mobile drawer) are `Link
+  to="/join"`, and the homepage's Founder's Note membership card (`PromoBanner.tsx`) links there
+  too now (see "Header & dashboard shell simplifications" below).
+- **Seed data**: `scripts/seed-subscriptions.ts` (`npm run db:seed:subscriptions`) — upserts the 2
+  packages by `slug`: fixed fields (name/duration/benefits) are always `$set` so copy edits in the
+  script propagate on re-run, but `price` is only set via `$setOnInsert`, so re-running the script
+  never resets a coach's already-edited price (verified: edited Premium's price, re-ran the seed,
+  price was unchanged). Then assigns packages to the existing seeded clients for variety — Jordan
+  Ellis and Riley Chen get Premium, Casey Brooks and Sam Whitfield get Basic, Morgan Blake stays
+  unassigned (consistent with their already-established empty state elsewhere).
+
+## Contact
+
+`/contact` used to be static markup with a submit button that did nothing. Now a small guest-only
+domain, `src/contact/` (mirrors the read-only half of `src/subscriptions/` — no coach-admin side
+was requested): `types.ts` (`ContactMessageInput`), `contact.server.ts`
+(`submitContactMessage(input)` — inserts into a new `contactMessages` collection, see "Data model"
+above), `functions.ts` (`submitContactMessageFn` — **no middleware at all**, the app's first public
+*write* rather than just a public read; same no-CSRF-guard posture already flagged as a known gap
+for the rest of the app, since "a guest submits a contact form with no account" is inherently
+public). `src/routes/contact.tsx` is now controlled inputs + `useMutation`, disables the submit
+button while pending, and swaps the form for a "Message sent." confirmation card on success — no
+visual redesign otherwise, same underlined-input style as before. Name/Email/Message are required;
+Phone stays optional, matching the field's implicit optionality in the original static markup.
+**No coach-facing inbox exists yet** — messages are written and never read back; revisit if this
+needs to become browsable.
+
+## Header & dashboard shell simplifications
+
+Two small UI cleanups, unrelated to each other beyond both touching the logged-in chrome:
+
+- **Header account icon** (`src/components/Header.tsx`): used to open a shadcn `DropdownMenu`
+  (portal link + log out). Now a plain `Link` to `/coach`/`/portal` — one click, no menu, same
+  `grid h-10 w-10 place-items-center rounded-sm hover:bg-muted` button styling. This removes the
+  only log-out affordance from the public marketing header; the portal/coach sidebar still has one
+  (see below), so it's not a dead end — a logged-in user just has to be inside their portal to log
+  out from the header side of things now.
+- **Dashboard sidebar "account" card** (`src/components/dashboard/DashboardLayout.tsx`): the
+  desktop sidebar used to show a bordered `{name}` / `{role} account` box above the Site/Log out
+  buttons. That box is gone; Site/Log out now sit directly in the `border-t border-border p-4`
+  wrapper. The mobile slide-over's plain-text name line (not a bordered "card") was left as-is —
+  out of scope for this ask.
+- **Founder's Note CTA** (`src/components/sections/PromoBanner.tsx`): the homepage membership card
+  used to read "Elite Coaching" over a dead "Apply Now" `<button>` (a leftover from the original
+  static marketing site, never wired to anything). Heading is now "Register Now"; the button is a
+  real `Link to="/join"` labeled "Join Us", same visual treatment (underline + `ArrowUpRight` icon).
+
 ## Global dialog behavior
 
 Every shadcn `Dialog` now keeps its header and footer fixed with only the
@@ -839,8 +1035,19 @@ component already handles it.
   (no raw TCP sockets). Local dev is unaffected. When deployment comes up,
   decide between: switching the nitro preset to a Node target, or using
   MongoDB's Atlas Data API / a Workers-compatible driver.
-- No public signup exists — figure out whether clients self-register or the
-  coach invites/creates them before building that flow.
+- Public signup now exists (`/join`, self-service, package + phone required
+  at signup, an optional second step for dob/height/weight/nationality/
+  profile picture — see "Subscriptions" above), and a client can now edit all
+  of that themselves afterward at `/portal/settings` (see "Clients & Split
+  Assignments" above). Still no coach-facing "invite/create a client" UI flow
+  — only self-register or a seed script produce a client account today.
+- `/join`'s profile-picture upload (`uploadJoinProfilePictureFn`) and
+  `/contact`'s submit (`submitContactMessageFn`) are the app's first
+  **unauthenticated write** RPCs — low individual risk (a disk write /
+  a DB insert, nothing destructive or reads-back-sensitive-data), but there's
+  still no CSRF origin-check or rate limiting anywhere in the app (see
+  "Still hardcoded dummy data" above), so both are as spammable as any other
+  public form on the internet today. Revisit together if abuse becomes real.
 - "May add additional [client-tracking] features in the future" — the user
   flagged this explicitly, so don't assume diet/workouts/exercises/weight is
   the final feature set for the client portal.

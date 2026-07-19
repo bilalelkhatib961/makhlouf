@@ -129,13 +129,7 @@ export function DashboardLayout({
         </div>
 
         <div className="border-t border-border p-4">
-          <div className="rounded-sm border border-border p-3">
-            <p className="truncate text-sm font-medium">{user.name}</p>
-            <p className="truncate text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              {user.role} account
-            </p>
-          </div>
-          <div className="mt-2 flex gap-2">
+          <div className="flex gap-2">
             <Link
               to="/"
               className="flex h-10 flex-1 items-center justify-center gap-2 rounded-sm text-xs font-medium uppercase tracking-[0.14em] text-foreground/70 hover:bg-muted"

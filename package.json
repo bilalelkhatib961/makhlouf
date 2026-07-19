@@ -15,7 +15,8 @@
     "db:seed:training": "tsx scripts/seed-training.ts",
     "db:seed:clients": "tsx scripts/seed-clients.ts",
     "db:seed:diet": "tsx scripts/seed-diet.ts",
-    "db:seed:galleries": "tsx scripts/seed-galleries.ts"
+    "db:seed:galleries": "tsx scripts/seed-galleries.ts",
+    "db:seed:subscriptions": "tsx scripts/seed-subscriptions.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

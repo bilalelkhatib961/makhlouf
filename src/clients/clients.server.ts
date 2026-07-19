@@ -1,6 +1,7 @@
 import { ObjectId, type Collection } from "mongodb";
 import { getDb } from "@/lib/db.server";
 import { listDietPlanAssignmentsForClient } from "@/diet/diet-assignments.server";
+import { listSubscriptionAssignmentsForClient } from "@/subscriptions/assignments.server";
 import { listAssignmentsForClient } from "./assignments.server";
 import type { ClientDetail, ClientListItem, ClientProfile, ClientProfileInput } from "./types";
 
@@ -51,9 +52,10 @@ export async function listClients(): Promise<ClientListItem[]> {
 
   return Promise.all(
     users.map(async (user) => {
-      const [assignments, dietAssignments] = await Promise.all([
+      const [assignments, dietAssignments, subscriptionAssignments] = await Promise.all([
         listAssignmentsForClient(user._id.toString()),
         listDietPlanAssignmentsForClient(user._id.toString()),
+        listSubscriptionAssignmentsForClient(user._id.toString()),
       ]);
       return {
         id: user._id.toString(),
@@ -63,6 +65,7 @@ export async function listClients(): Promise<ClientListItem[]> {
         profile: toProfile(profileByUserId.get(user._id.toString())),
         currentAssignment: assignments[0] ?? null,
         currentDietPlan: dietAssignments[0] ?? null,
+        currentSubscription: subscriptionAssignments[0] ?? null,
       };
     }),
   );
@@ -75,13 +78,15 @@ export async function getClientDetail(userId: string): Promise<ClientDetail> {
     .findOne({ _id: new ObjectId(userId), role: "client" });
   if (!user) throw new Error("Client not found");
 
-  const [profileDoc, assignments, dietAssignments] = await Promise.all([
+  const [profileDoc, assignments, dietAssignments, subscriptionAssignments] = await Promise.all([
     (await profilesCollection()).findOne({ userId: user._id }),
     listAssignmentsForClient(userId),
     listDietPlanAssignmentsForClient(userId),
+    listSubscriptionAssignmentsForClient(userId),
   ]);
   const [currentAssignment, ...history] = assignments;
   const [currentDietPlan, ...dietPlanHistory] = dietAssignments;
+  const [currentSubscription, ...subscriptionHistory] = subscriptionAssignments;
 
   return {
     id: user._id.toString(),
@@ -93,6 +98,26 @@ export async function getClientDetail(userId: string): Promise<ClientDetail> {
     history,
     currentDietPlan: currentDietPlan ?? null,
     dietPlanHistory,
+    currentSubscription: currentSubscription ?? null,
+    subscriptionHistory,
+  };
+}
+
+export async function getOwnProfile(
+  userId: string,
+): Promise<{ id: string; name: string; email: string; profile: ClientProfile }> {
+  const db = await getDb();
+  const user = await db
+    .collection<ClientUserDoc>("users")
+    .findOne({ _id: new ObjectId(userId), role: "client" });
+  if (!user) throw new Error("Client not found");
+
+  const profileDoc = await (await profilesCollection()).findOne({ userId: user._id });
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    profile: toProfile(profileDoc),
   };
 }
 

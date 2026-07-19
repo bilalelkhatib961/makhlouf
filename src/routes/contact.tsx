@@ -1,5 +1,8 @@
+import { useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Mail, MapPin, Phone, ArrowRight } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { Mail, MapPin, Phone, ArrowRight, Check } from "lucide-react";
+import { submitContactMessageFn } from "@/contact/functions";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -17,6 +20,25 @@ export const Route = createFileRoute("/contact")({
 });
 
 function ContactPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+
+  const submitMutation = useMutation({
+    mutationFn: () =>
+      submitContactMessageFn({
+        data: { name, email, phone: phone.trim() || null, message },
+      }),
+    onSuccess: () => setSent(true),
+  });
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    submitMutation.mutate();
+  };
+
   return (
     <div className="pt-24">
       <div className="mx-auto max-w-7xl px-6 pt-16 lg:px-10">
@@ -27,39 +49,86 @@ function ContactPage() {
       </div>
 
       <section className="mx-auto grid max-w-7xl grid-cols-1 gap-16 px-6 py-24 lg:grid-cols-12 lg:gap-20 lg:px-10">
-        <form className="lg:col-span-7 space-y-6">
-          {[
-            { l: "Name", t: "text" },
-            { l: "Email", t: "email" },
-            { l: "Phone", t: "tel" },
-          ].map((f) => (
-            <div key={f.l}>
+        {sent ? (
+          <div className="lg:col-span-7 flex items-start gap-4 border border-border p-8">
+            <Check className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <h3 className="font-display text-2xl">Message sent.</h3>
+              <p className="mt-2 text-sm leading-relaxed text-foreground/70">
+                Thanks for reaching out — we&apos;ll be in touch shortly.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-6">
+            <div>
               <label className="block text-[10px] uppercase tracking-[0.25em] text-foreground/60">
-                {f.l}
+                Name
               </label>
               <input
-                type={f.t}
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="mt-2 h-12 w-full border-b border-foreground/30 bg-transparent text-base outline-none transition focus:border-foreground"
               />
             </div>
-          ))}
-          <div>
-            <label className="block text-[10px] uppercase tracking-[0.25em] text-foreground/60">
-              Message
-            </label>
-            <textarea
-              rows={5}
-              className="mt-2 w-full border-b border-foreground/30 bg-transparent text-base outline-none transition focus:border-foreground"
-            />
-          </div>
-          <button
-            type="button"
-            className="group inline-flex h-14 items-center gap-3 rounded-sm bg-foreground px-7 text-sm font-medium uppercase tracking-[0.18em] text-background transition hover:gap-5"
-          >
-            Send Message{" "}
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </button>
-        </form>
+            <div>
+              <label className="block text-[10px] uppercase tracking-[0.25em] text-foreground/60">
+                Email
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-2 h-12 w-full border-b border-foreground/30 bg-transparent text-base outline-none transition focus:border-foreground"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-[0.25em] text-foreground/60">
+                Phone
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="mt-2 h-12 w-full border-b border-foreground/30 bg-transparent text-base outline-none transition focus:border-foreground"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-[0.25em] text-foreground/60">
+                Message
+              </label>
+              <textarea
+                rows={5}
+                required
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className="mt-2 w-full border-b border-foreground/30 bg-transparent text-base outline-none transition focus:border-foreground"
+              />
+            </div>
+
+            {submitMutation.isError && (
+              <p className="text-sm text-destructive">
+                {submitMutation.error instanceof Error
+                  ? submitMutation.error.message
+                  : "Something went wrong. Please try again."}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitMutation.isPending}
+              className="group inline-flex h-14 items-center gap-3 rounded-sm bg-foreground px-7 text-sm font-medium uppercase tracking-[0.18em] text-background transition hover:gap-5 disabled:opacity-50"
+            >
+              {submitMutation.isPending ? "Sending…" : "Send Message"}{" "}
+              {!submitMutation.isPending && (
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              )}
+            </button>
+          </form>
+        )}
 
         <aside className="lg:col-span-5">
           <div className="border border-border p-8">

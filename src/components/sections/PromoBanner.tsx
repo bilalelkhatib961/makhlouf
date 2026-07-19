@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
 
 export function PromoBanner() {
@@ -47,19 +48,19 @@ export function PromoBanner() {
           transition={{ duration: 0.8, delay: 0.15 }}
           className="lg:col-span-4"
         >
-          <div className="border border-background/20 p-8">
+          <Link to="/join" className="border border-background/20 p-8 block">
             <p className="text-[10px] uppercase tracking-[0.3em] text-background/60">
               Featured · Membership
             </p>
-            <h3 className="mt-3 font-display text-3xl">Elite Coaching</h3>
+            <h3 className="mt-3 font-display text-3xl">Register Now</h3>
             <p className="mt-3 text-sm leading-relaxed text-background/70">
               1:1 programming, weekly check-ins, and access to the full Makhlouf system.
             </p>
-            <button className="group mt-6 inline-flex items-center gap-2 border-b border-background pb-1 text-sm uppercase tracking-[0.18em]">
-              Apply Now
+            <div className="group mt-6 inline-flex items-center gap-2 border-b border-background pb-1 text-sm uppercase tracking-[0.18em]">
+              Join Us
               <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </button>
-          </div>
+            </div>
+          </Link>
         </motion.div>
       </div>
     </section>
