@@ -10,6 +10,49 @@ export interface DashboardNavItem {
   to: string;
   label: string;
   icon: LucideIcon;
+  status?: "todo";
+}
+
+function NavLink({
+  item,
+  basePath,
+  onNavigate,
+  dimmed,
+}: {
+  item: DashboardNavItem;
+  basePath: string;
+  onNavigate?: () => void;
+  dimmed?: boolean;
+}) {
+  const pathname = useLocation({ select: (l) => l.pathname });
+  const isActive =
+    item.to === basePath
+      ? pathname === basePath
+      : pathname.startsWith(`${item.to}/`) || pathname === item.to;
+
+  return (
+    <Link
+      to={item.to}
+      onClick={onNavigate}
+      // Router's own default active-matching is prefix-based, which would mark
+      // this link "active" (aria-current, data-status) on every deeper route
+      // too — e.g. the Dashboard link ("/coach") on "/coach/clients". `isActive`
+      // above already computes the real state for styling, so pin the router's
+      // own indicator to an exact match instead of letting the two disagree.
+      activeOptions={{ exact: true }}
+      className={cn(
+        "flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium uppercase tracking-[0.14em] transition",
+        isActive
+          ? "bg-foreground text-background"
+          : dimmed
+            ? "text-foreground/40 hover:bg-muted hover:text-foreground/70"
+            : "text-foreground/70 hover:bg-muted hover:text-foreground",
+      )}
+    >
+      <item.icon className="h-4 w-4 shrink-0" />
+      {item.label}
+    </Link>
+  );
 }
 
 function SidebarNav({
@@ -21,33 +64,25 @@ function SidebarNav({
   basePath: string;
   onNavigate?: () => void;
 }) {
-  const pathname = useLocation({ select: (l) => l.pathname });
+  const doneItems = navItems.filter((item) => item.status !== "todo");
+  const todoItems = navItems.filter((item) => item.status === "todo");
 
   return (
     <nav className="flex flex-col gap-1">
-      {navItems.map((item) => {
-        const isActive =
-          item.to === basePath
-            ? pathname === basePath
-            : pathname.startsWith(`${item.to}/`) || pathname === item.to;
+      {doneItems.map((item) => (
+        <NavLink key={item.to} item={item} basePath={basePath} onNavigate={onNavigate} />
+      ))}
 
-        return (
-          <Link
-            key={item.to}
-            to={item.to}
-            onClick={onNavigate}
-            className={cn(
-              "flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium uppercase tracking-[0.14em] transition",
-              isActive
-                ? "bg-foreground text-background"
-                : "text-foreground/70 hover:bg-muted hover:text-foreground",
-            )}
-          >
-            <item.icon className="h-4 w-4 shrink-0" />
-            {item.label}
-          </Link>
-        );
-      })}
+      {todoItems.length > 0 && (
+        <>
+          <p className="mt-4 px-3 pb-1 text-[10px] uppercase tracking-[0.25em] text-foreground/40">
+            Uncompleted
+          </p>
+          {todoItems.map((item) => (
+            <NavLink key={item.to} item={item} basePath={basePath} onNavigate={onNavigate} dimmed />
+          ))}
+        </>
+      )}
     </nav>
   );
 }

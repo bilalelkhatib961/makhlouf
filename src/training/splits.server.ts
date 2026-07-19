@@ -123,7 +123,17 @@ export async function updateSplit(id: string, input: SplitInput): Promise<void> 
 }
 
 export async function deleteSplit(id: string): Promise<void> {
+  const db = await getDb();
+  const splitId = new ObjectId(id);
+
+  const assignmentCount = await db.collection("splitAssignments").countDocuments({ splitId });
+  if (assignmentCount > 0) {
+    throw new Error(
+      `Cannot delete this split — ${assignmentCount} client${assignmentCount === 1 ? " has" : "s have"} it assigned.`,
+    );
+  }
+
   const collection = await splitsCollection();
-  const result = await collection.deleteOne({ _id: new ObjectId(id) });
+  const result = await collection.deleteOne({ _id: splitId });
   if (result.deletedCount === 0) throw new Error("Split not found");
 }

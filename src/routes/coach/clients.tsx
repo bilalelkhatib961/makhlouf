@@ -1,7 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { getCoachClientsFn } from "@/clients/functions";
+import { splitProgress } from "@/clients/progress";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -15,94 +18,112 @@ export const Route = createFileRoute("/coach/clients")({
   component: ClientsPage,
 });
 
-const CLIENTS = [
-  {
-    name: "Jordan Ellis",
-    email: "client@makhlouf.com",
-    plan: "Elite Coaching",
-    status: "Active",
-    joined: "Jan 2025",
-  },
-  {
-    name: "Casey Brooks",
-    email: "casey@example.com",
-    plan: "Programming Only",
-    status: "Active",
-    joined: "Mar 2025",
-  },
-  {
-    name: "Riley Chen",
-    email: "riley@example.com",
-    plan: "Elite Coaching",
-    status: "Active",
-    joined: "Apr 2025",
-  },
-  {
-    name: "Sam Whitfield",
-    email: "sam@example.com",
-    plan: "Hybrid",
-    status: "Paused",
-    joined: "Nov 2024",
-  },
-  {
-    name: "Morgan Blake",
-    email: "morgan@example.com",
-    plan: "Elite Coaching",
-    status: "Active",
-    joined: "Jun 2025",
-  },
-  {
-    name: "Taylor Reyes",
-    email: "taylor@example.com",
-    plan: "Programming Only",
-    status: "Trial",
-    joined: "Jul 2025",
-  },
-] as const;
-
-const STATUS_VARIANT = {
-  Active: "default",
-  Paused: "secondary",
-  Trial: "outline",
-} as const;
+function initials(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
 
 function ClientsPage() {
+  const navigate = useNavigate();
+  const clientsQuery = useQuery({
+    queryKey: ["coach", "clients"],
+    queryFn: () => getCoachClientsFn(),
+  });
+  const clients = clientsQuery.data ?? [];
+
   return (
     <div>
       <PageHeader
         eyebrow="Roster"
         title="Clients."
-        description="Everyone you currently coach. Placeholder roster — client management isn't wired up yet."
-        action={
-          <button className="inline-flex h-11 items-center gap-2 rounded-sm bg-foreground px-5 text-xs font-medium uppercase tracking-[0.18em] text-background">
-            <Plus className="h-4 w-4" /> Add Client
-          </button>
-        }
+        description="Everyone you currently coach, with their profile info and current program."
       />
 
       <div className="border border-border">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-16"></TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Nationality</TableHead>
+              <TableHead>Current Split</TableHead>
               <TableHead>Joined</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {CLIENTS.map((client) => (
-              <TableRow key={client.email}>
-                <TableCell className="font-medium">{client.name}</TableCell>
-                <TableCell className="text-muted-foreground">{client.email}</TableCell>
-                <TableCell>{client.plan}</TableCell>
-                <TableCell>
-                  <Badge variant={STATUS_VARIANT[client.status]}>{client.status}</Badge>
+            {clientsQuery.isLoading && (
+              <TableRow>
+                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                  Loading…
                 </TableCell>
-                <TableCell className="text-muted-foreground">{client.joined}</TableCell>
               </TableRow>
-            ))}
+            )}
+            {!clientsQuery.isLoading && clients.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                  No clients yet.
+                </TableCell>
+              </TableRow>
+            )}
+            {clients.map((client) => {
+              const progress = client.currentAssignment
+                ? splitProgress(
+                    client.currentAssignment.startDate,
+                    client.currentAssignment.durationWeeks,
+                  )
+                : null;
+              return (
+                <TableRow
+                  key={client.id}
+                  onClick={() =>
+                    navigate({ to: "/coach/clients/$clientId", params: { clientId: client.id } })
+                  }
+                  className="cursor-pointer"
+                >
+                  <TableCell>
+                    <Avatar>
+                      <AvatarImage src={client.profile.profilePicture ?? undefined} alt="" />
+                      <AvatarFallback>{initials(client.name)}</AvatarFallback>
+                    </Avatar>
+                  </TableCell>
+                  <TableCell className="font-medium">{client.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{client.email}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {client.profile.phone ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {client.profile.nationality ?? "—"}
+                  </TableCell>
+                  <TableCell>
+                    {client.currentAssignment && progress ? (
+                      <div className="min-w-40">
+                        <p className="text-sm">{client.currentAssignment.splitName}</p>
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <Progress value={progress.percent} className="h-1.5 w-24" />
+                          <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                            {progress.percent}%
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">No active split</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(client.joinedAt).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                    })}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

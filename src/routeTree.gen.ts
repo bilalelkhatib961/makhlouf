@@ -28,6 +28,7 @@ import { Route as CoachSubscriptionsRouteImport } from './routes/coach/subscript
 import { Route as CoachSchedulesRouteImport } from './routes/coach/schedules'
 import { Route as CoachProductsRouteImport } from './routes/coach/products'
 import { Route as CoachClientsRouteImport } from './routes/coach/clients'
+import { Route as CoachClientsClientIdRouteImport } from './routes/coach/clients_.$clientId'
 
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
@@ -124,6 +125,11 @@ const CoachClientsRoute = CoachClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => CoachRoute,
 } as any)
+const CoachClientsClientIdRoute = CoachClientsClientIdRouteImport.update({
+  id: '/clients_/$clientId',
+  path: '/clients/$clientId',
+  getParentRoute: () => CoachRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/portal/workouts': typeof PortalWorkoutsRoute
   '/coach/': typeof CoachIndexRoute
   '/portal/': typeof PortalIndexRoute
+  '/coach/clients/$clientId': typeof CoachClientsClientIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/portal/workouts': typeof PortalWorkoutsRoute
   '/coach': typeof CoachIndexRoute
   '/portal': typeof PortalIndexRoute
+  '/coach/clients/$clientId': typeof CoachClientsClientIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/portal/workouts': typeof PortalWorkoutsRoute
   '/coach/': typeof CoachIndexRoute
   '/portal/': typeof PortalIndexRoute
+  '/coach/clients_/$clientId': typeof CoachClientsClientIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -209,6 +218,7 @@ export interface FileRouteTypes {
     | '/portal/workouts'
     | '/coach/'
     | '/portal/'
+    | '/coach/clients/$clientId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/portal/workouts'
     | '/coach'
     | '/portal'
+    | '/coach/clients/$clientId'
   id:
     | '__root__'
     | '/'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/portal/workouts'
     | '/coach/'
     | '/portal/'
+    | '/coach/clients_/$clientId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -397,6 +409,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoachClientsRouteImport
       parentRoute: typeof CoachRoute
     }
+    '/coach/clients_/$clientId': {
+      id: '/coach/clients_/$clientId'
+      path: '/clients/$clientId'
+      fullPath: '/coach/clients/$clientId'
+      preLoaderRoute: typeof CoachClientsClientIdRouteImport
+      parentRoute: typeof CoachRoute
+    }
   }
 }
 
@@ -407,6 +426,7 @@ interface CoachRouteChildren {
   CoachSubscriptionsRoute: typeof CoachSubscriptionsRoute
   CoachTrainingRoute: typeof CoachTrainingRoute
   CoachIndexRoute: typeof CoachIndexRoute
+  CoachClientsClientIdRoute: typeof CoachClientsClientIdRoute
 }
 
 const CoachRouteChildren: CoachRouteChildren = {
@@ -416,6 +436,7 @@ const CoachRouteChildren: CoachRouteChildren = {
   CoachSubscriptionsRoute: CoachSubscriptionsRoute,
   CoachTrainingRoute: CoachTrainingRoute,
   CoachIndexRoute: CoachIndexRoute,
+  CoachClientsClientIdRoute: CoachClientsClientIdRoute,
 }
 
 const CoachRouteWithChildren = CoachRoute._addFileChildren(CoachRouteChildren)

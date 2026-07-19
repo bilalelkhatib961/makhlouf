@@ -3,12 +3,12 @@ import { LayoutDashboard, Users, CreditCard, Package, Dumbbell, Calendar } from 
 import { DashboardLayout, type DashboardNavItem } from "@/components/dashboard/DashboardLayout";
 
 const NAV_ITEMS: DashboardNavItem[] = [
-  { to: "/coach", label: "Dashboard", icon: LayoutDashboard },
   { to: "/coach/clients", label: "Clients", icon: Users },
-  { to: "/coach/subscriptions", label: "Subscriptions", icon: CreditCard },
   { to: "/coach/products", label: "Products", icon: Package },
   { to: "/coach/training", label: "Training", icon: Dumbbell },
-  { to: "/coach/schedules", label: "Schedules", icon: Calendar },
+  { to: "/coach", label: "Dashboard", icon: LayoutDashboard, status: "todo" },
+  { to: "/coach/subscriptions", label: "Subscriptions", icon: CreditCard, status: "todo" },
+  { to: "/coach/schedules", label: "Schedules", icon: Calendar, status: "todo" },
 ];
 
 export const Route = createFileRoute("/coach")({

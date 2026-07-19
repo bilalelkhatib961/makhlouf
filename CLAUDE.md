@@ -42,27 +42,37 @@ marketing header/footer.
   quantity limits — **no checkout**). See "Products & Catalog" below.
 - Real, dynamic **Training system**: coach CRUD at `/coach/training` (four
   tabs — Muscle Groups, Muscle Categories, Exercises, Splits) covering the
-  full programming hierarchy a coach builds workouts from. Coach-only this
-  round — no client-facing assignment or workout-history tracking yet. See
-  "Training" below.
+  full programming hierarchy a coach builds workouts from. See "Training"
+  below.
+- Real, dynamic **Clients**: coach-facing roster at `/coach/clients` reading
+  real `client`-role accounts, a per-client detail page
+  (`/coach/clients/$clientId`) with editable profile info (dob, weight,
+  height, phone, nationality, optional profile picture), the ability to
+  assign a Split with a start date, a live progress bar for the current
+  assignment, and a history table of every previous assignment. See "Clients
+  & Split Assignments" below.
 
 **Still hardcoded dummy data — not built yet:**
-- Clients, Subscriptions, Schedules in the coach CMS, and Diet, Workouts,
+- Dashboard, Subscriptions, Schedules in the coach CMS, and Diet, Workouts,
   Exercises, Weight in the client portal — every list/table on those pages is
-  a hardcoded array in the route file, not a database read. Products/
-  Categories and now Training were the first of these to go real; the same
-  read/write/`coachMiddleware` pattern applies when the rest get built.
-- Public signup/registration (only the two seeded accounts exist; the coach
-  presumably creates client accounts, but that flow doesn't exist yet).
+  a hardcoded array in the route file, not a database read. These three coach
+  pages are flagged under an "Uncompleted" heading in the `/coach` sidebar
+  (see "Conventions" below) specifically so they're not mistaken for done.
+  Products/Categories, Training, and now Clients were the first of these to
+  go real; the same read/write/`coachMiddleware` pattern applies when the
+  rest get built.
+- Public signup/registration (only the originally-seeded coach/client
+  accounts exist as "real" logins; `scripts/seed-clients.ts` adds more client
+  accounts but only via a seed script, not a coach-facing "create client" UI
+  flow — that still doesn't exist).
 - Checkout/payment/orders — the cart is real, checkout is explicitly not.
 - CSRF origin-check middleware, rate limiting on login, `/unauthorized` page
   (wrong-role users are just redirected to their own home instead).
 - Password reset.
-- Client-facing training: assigning a split to a client, the client's "what
-  do I do today" view, and per-set weight/rep history tracking. The data
-  model (`splits.days[].exercises[].sets`) was designed with this in mind —
-  see "Training" below — but none of it is built. Explicitly deferred by the
-  user when this feature was requested.
+- Client-facing training: the client's own "what do I do today" view and
+  per-set weight/rep history tracking. The coach-side half of this (assigning
+  a split, tracking progress) is now built — see "Clients & Split
+  Assignments" below — but nothing renders on the client-portal side yet.
 
 When any of the above gets built, move it out of this list into the
 architecture notes below and describe how it actually works.
@@ -95,17 +105,22 @@ architecture notes below and describe how it actually works.
   UX only, NOT the server function endpoint itself (it's callable directly
   regardless of which route renders it). There's also **`coachMiddleware`**
   (same file) — composes `authMiddleware` and additionally checks
-  `role === "coach"`; every products/categories mutation uses it, and every
-  training mutation (`src/training/functions.ts`) reuses it verbatim too.
-  Follow this pattern for future coach-owned data (clients, subscriptions,
-  schedules) — don't trust a client-supplied ID alone, scope by
-  `context.user.id`/`role`.
+  `role === "coach"`; every products/categories mutation uses it, every
+  training mutation (`src/training/functions.ts`) reuses it verbatim, and so
+  does every client mutation (`src/clients/functions.ts`). Follow this
+  pattern for future coach-owned data (subscriptions, schedules) — don't
+  trust a client-supplied ID alone, scope by `context.user.id`/`role`.
+  `src/clients/clients.server.ts`/`assignments.server.ts` go one step further
+  and re-check `role === "client"` on the target user too, so a coach can't
+  accidentally attach a profile/assignment to another coach account.
 - **Seed script**: `scripts/seed.ts` (run via `npm run db:seed`), deliberately
   outside `src/` — it's a standalone Node script run through `tsx`, not part
   of the Vite app bundle. `scripts/seed-catalog.ts` (`npm run db:seed:catalog`)
   seeds demo categories/products the same way. `scripts/seed-training.ts`
   (`npm run db:seed:training`) seeds demo muscle groups/categories/exercises
-  and one split.
+  and three splits. `scripts/seed-clients.ts` (`npm run db:seed:clients`)
+  seeds four more client accounts plus profile/assignment data for all five —
+  depends on both of the above having already run.
 
 ## Data model
 
@@ -196,6 +211,29 @@ MongoDB, database name `makhlouf` (see `.env` / `MONGODB_DB_NAME`).
   createdAt: Date;
   updatedAt: Date;
 }
+
+// clientProfiles — 1:1 with a "client"-role users doc, created lazily on first edit
+{
+  _id: ObjectId;
+  userId: ObjectId;              // ref users._id, unique
+  dob: Date | null;
+  weight: number | null;         // kg
+  height: number | null;         // cm
+  phone: string | null;
+  nationality: string | null;
+  profilePicture: string | null; // /uploads/clients/<uuid>.<ext>
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// splitAssignments — append-only history, never edited or deleted
+{
+  _id: ObjectId;
+  clientId: ObjectId;   // ref users._id
+  splitId: ObjectId;    // ref splits._id
+  startDate: Date;
+  createdAt: Date;
+}
 ```
 
 Pricing, stock, active-state, and images all live **per variant**, not on the product — a
@@ -209,9 +247,17 @@ and `listProductsPublic` (`src/products/products.server.ts`) returns only the ac
 flat on the product with `variants` as bare option-axis metadata (`{name, options[]}`) — that
 shape is gone.
 
-Clients list, subscriptions, schedules, diet logs, workouts, and weight
-entries are still just static arrays inside their route files — no schema
-yet. Record the shape here once each one goes real.
+"Current" vs. "history" for a client's split assignments isn't a stored flag
+— it's derived by sorting `splitAssignments` for a client by `startDate` desc
+(tiebreak `createdAt`): the newest one is "current", everything else is
+"history". Progress/status (Upcoming / In Progress / Completed) is likewise
+computed on the fly from `{startDate, durationWeeks}` vs. `new Date()` — see
+`src/clients/progress.ts`'s `splitProgress()` — never cached, so it can't go
+stale. Weight is kg, height is cm; no unit toggle exists.
+
+Dashboard stats, subscriptions, schedules, diet logs, workouts, and weight
+entries (client portal) are still just static arrays inside their route
+files — no schema yet. Record the shape here once each one goes real.
 
 ### Seed accounts
 
@@ -233,11 +279,30 @@ Curated. Tested. Minimal." (the site's original hardcoded shop-section copy,
 now real data) and references all 6 seeded products, `showOnLandingPage: true`.
 
 Run `npm run db:seed:training` to populate 15 demo muscle groups, 6 muscle
-categories, 15 exercises (one per muscle group), and one split ("Push Pull
-Legs Arms", 6 weeks). Muscle groups/categories are idempotent (matched by
-`name`, same pattern as categories above); exercises and splits are **not** —
-cleared and reinserted fresh every run, same reasoning as products. Uses the
-same bundled product photos as `seed-catalog.ts` for placeholder images.
+categories, 15 exercises (one per muscle group), and three splits ("Push Pull
+Legs Arms" 6 weeks, "Upper Lower Split" 8 weeks, "Full Body Strength" 10
+weeks). Muscle groups/categories are idempotent (matched by `name`, same
+pattern as categories above); exercises and splits are **not** — cleared and
+reinserted fresh every run, same reasoning as products. Uses the same bundled
+product photos as `seed-catalog.ts` for placeholder images.
+
+Run `npm run db:seed:clients` **after** the two scripts above (it looks up
+splits by name and throws a clear error if none exist yet) to populate four
+more client accounts and profile/history data for all five clients — see
+"Clients & Split Assignments" below for exactly what each one demonstrates.
+New accounts all use password `Client!2025`, same as the original seeded
+client:
+
+| Email               | Name           |
+| -------------------- | -------------- |
+| casey@makhlouf.com   | Casey Brooks   |
+| riley@makhlouf.com   | Riley Chen     |
+| sam@makhlouf.com     | Sam Whitfield  |
+| morgan@makhlouf.com  | Morgan Blake   |
+
+Assignment history is demo data and **not** idempotent — cleared and
+reinserted fresh per client every run (profiles *are* idempotent, upserted by
+`userId`, same as categories/muscle groups).
 
 ## Products & Catalog
 
@@ -344,9 +409,11 @@ client-facing pieces exist yet — see "Still hardcoded dummy data" above.
   uses `coachMiddleware`, nothing here is public). **Referential integrity**
   mirrors `categories.server.ts`'s product-count block: deleting a muscle
   group is blocked if any exercise or muscle category still references it;
-  deleting an exercise is blocked if any split still references it. Muscle
-  categories have no incoming references from anything else, so they delete
-  freely.
+  deleting an exercise is blocked if any split still references it; deleting
+  a split is blocked if any client still has it assigned (checks the
+  `splitAssignments` collection added by the Clients feature — see below).
+  Muscle categories have no incoming references from anything else, so they
+  delete freely.
 - **Media upload generalized beyond images**: exercises need image *and*
   video uploads, but the original `src/products/upload.server.ts` hardcoded
   image-only mimetypes. Pulled the disk-write logic out into a new
@@ -386,13 +453,106 @@ client-facing pieces exist yet — see "Still hardcoded dummy data" above.
   before save.
 - **Seed data**: `scripts/seed-training.ts` — see "Seed accounts" above.
 
+## Clients & Split Assignments
+
+Coach-facing roster and per-client detail page. Reads real `client`-role
+`users` docs — no client account creation UI exists yet (see "Still hardcoded
+dummy data" above), only the seed scripts add more.
+
+- **Server layer** (`src/clients/`, same shape as `src/training/`):
+  `types.ts` (shared, client-safe — `ClientProfile`, `SplitAssignment`,
+  `ClientListItem`, `ClientDetail`), `progress.ts` (pure, no I/O —
+  `splitProgress(startDate, durationWeeks)` → `{ percent, status, weekLabel,
+  endDate }`, reused by both the roster's inline mini-progress and the detail
+  page's big progress card so the two never disagree), `clients.server.ts`
+  (`listClients()`, `getClientDetail(userId)`, `upsertClientProfile`),
+  `assignments.server.ts` (`listAssignmentsForClient` — resolves
+  `splitName`/`durationWeeks` via a name map, same pattern as
+  `splits.server.ts`'s `exerciseNameMap()`; `assignSplit` — validates the
+  target user is actually `role: "client"` and the split exists, then inserts
+  one append-only row), `upload.server.ts` (`saveClientProfilePicture`, a
+  thin wrapper over `saveAsset(file, "clients", IMAGE_MIMES)`), `functions.ts`
+  (the RPCs, all `coachMiddleware`). Dates cross the RPC boundary as ISO
+  strings in both directions — server converts `new Date(iso)` in, calls
+  `.toISOString()` out — consistent with every other primitive-only RPC in
+  this app.
+- **Coach CMS**: `/coach/clients` (`src/routes/coach/clients.tsx`) is a single
+  table — avatar (`Avatar`/`AvatarFallback`, first-initial fallback), name,
+  email, phone, nationality, current-split name + a compact `Progress` bar,
+  joined date — each row a click-through (`useNavigate`, not `Link`, since
+  the whole `TableRow` is the click target) to
+  `/coach/clients/$clientId`. That detail route's **file is named
+  `coach/clients_.$clientId.tsx`** (trailing underscore before the dot) —
+  without it, TanStack Router's file-based routing treats `clients.$clientId`
+  as a *child* of `clients.tsx` (since they share the `clients` segment),
+  which silently renders the parent list page's component instead of the
+  detail page for any `/coach/clients/:id` URL, because `ClientsPage` has no
+  `<Outlet />`. The trailing underscore is this router's documented
+  "de-nest from the same-named parent" escape — keeps the resolved URL as
+  `/coach/clients/$clientId` while making `getParentRoute` point at the
+  `coach` layout directly instead of `coach/clients`. Watch for this any time
+  a new dynamic child route is added under an existing same-named list route.
+  The detail page itself: a profile card (dob/weight/height/phone/
+  nationality, **Edit** → `ClientProfileFormDialog.tsx` — dob via a
+  `Popover`+`Calendar` date-picker, this app's first use of that combo;
+  profile picture via the established single-image blob-preview pattern from
+  `MuscleGroupFormDialog.tsx`, rendered as a circle instead of a square), a
+  current-split card (`Progress` bar, week label, status `Badge`, **Assign
+  Split** → `AssignSplitDialog.tsx` — a `Select` over `getCoachSplitsFn()`
+  plus the same date-picker, defaulting to today), and a history table
+  (every assignment except the current one). `AssignSplitDialog` adapts based
+  on whether `splitProgress(currentAssignment)` is `"in-progress"`: if not
+  (no current assignment, or it's upcoming/completed), it's a plain "Assign
+  Split" with a manual start-date picker, same as above; if it **is**
+  in-progress, the button/dialog title become "Replace Split", the date
+  picker is replaced by a `RadioGroup` (`ui/radio-group.tsx`) asking the
+  coach to either start the new split fresh from 0% (`startDate = now`) or
+  keep the current progress (`startDate` = the current assignment's own
+  `startDate`, carried over unchanged onto the new split). There's no
+  separate "replace" mutation — both paths call the same `assignSplitFn`,
+  just with a different computed `startDate`; "current vs. history" already
+  being purely derived (latest by `startDate` wins) means inserting a new
+  row with an old `startDate` naturally supersedes the in-progress one. Every
+  dialog date-picker trigger
+  is a hand-rolled `<button>` styled to match the rest of the app rather than
+  shadcn's `Button` component — this codebase never uses `Button` directly
+  outside `ui/` internals (e.g. `alert-dialog.tsx`'s `buttonVariants()`),
+  since its rounded-md/primary-color defaults don't match the site's sharp
+  `rounded-sm` grayscale system.
+- **Sidebar "Uncompleted" grouping**: `DashboardNavItem`
+  (`src/components/dashboard/DashboardLayout.tsx`) gained an optional
+  `status?: "todo"` field. `coach.tsx`'s `NAV_ITEMS` marks Dashboard,
+  Subscriptions, and Schedules with it; `SidebarNav` renders those after a
+  dimmed "Uncompleted" label (still fully clickable — a memory aid, not a
+  lock), in both the desktop sidebar and mobile slide-over since both share
+  the one component. While building this, fixed a latent bug in the same
+  component: `Link`'s own default active-matching is prefix-based, so the
+  Dashboard link (`to="/coach"`) was marking itself `aria-current="page"` on
+  every coach sub-route, not just `/coach` itself. Fixed by adding
+  `activeOptions={{ exact: true }}` to every nav `Link` — the component
+  already computed its own `isActive` for styling via `useLocation`, this
+  just stops the router's *own* indicator from disagreeing with it.
+- **Seed data**: `scripts/seed-clients.ts` — see "Seed accounts" above. Each
+  of the 5 seeded clients demonstrates a different state on purpose: Jordan
+  Ellis (full profile, one completed + one in-progress assignment), Casey
+  Brooks (full profile, single early in-progress assignment), Riley Chen
+  (full profile, three-entry history), Sam Whitfield (full profile, but every
+  assignment's duration has fully elapsed — demonstrates the "current
+  assignment renders as Completed" state rather than showing nothing), Morgan
+  Blake (no profile row, no assignments at all — the fully-empty state).
+
 ## Conventions
 
 - **Routing**: TanStack Start file-based routing under `src/routes/` — see
   `src/routes/README.md` for the exact file→URL rules (don't use Next.js/
   Remix conventions). `coach.tsx` + `coach/*.tsx` and `portal.tsx` +
   `portal/*.tsx` are layout routes exactly like `__root.tsx` + `index.tsx`
-  already worked before this session — same pattern, one level deeper.
+  already worked before this session — same pattern, one level deeper. A
+  dynamic route nested under a same-named list route (e.g. a detail page for
+  `clients.tsx`) needs the trailing-underscore de-nesting convention
+  (`clients_.$clientId.tsx`) or it silently renders the list page's component
+  instead — see "Clients & Split Assignments" for the full explanation; this
+  app's first dynamic route hit it.
 - **Server-only files** end in `.server.ts`. **Never name a directory
   `server/`** (e.g. `src/server/`) — `@lovable.dev/vite-tanstack-config`
   configures the TanStack Start import-protection plugin with
@@ -450,15 +610,18 @@ client-facing pieces exist yet — see "Still hardcoded dummy data" above.
 - "May add additional [client-tracking] features in the future" — the user
   flagged this explicitly, so don't assume diet/workouts/exercises/weight is
   the final feature set for the client portal.
-- Removing a product/exercise/muscle-group/muscle-category asset (or
-  deleting the record entirely) does not delete the underlying file from
-  `public/uploads/<folder>/` — only the DB reference goes away. Fine for now;
-  revisit if disk usage becomes a real concern.
-- Training is coach-only so far. Not built: assigning a split to a client,
-  the client's "what do I do today" view, and per-set weight/rep history —
-  see "Still hardcoded dummy data" above. The `splits.days[].exercises[].sets`
-  shape was designed to support a future per-set "completed" flag and history
-  log without a schema change, but neither exists yet.
+- Removing a product/exercise/muscle-group/muscle-category/client-profile
+  asset (or deleting the record entirely) does not delete the underlying file
+  from `public/uploads/<folder>/` — only the DB reference goes away. Fine for
+  now; revisit if disk usage becomes a real concern.
+- The coach can now assign a split to a client and track progress (see
+  "Clients & Split Assignments"), but nothing on the **client** side exists
+  yet: the client's own "what do I do today" view and per-set weight/rep
+  history. The `splits.days[].exercises[].sets` shape was designed to support
+  a future per-set "completed" flag and history log without a schema change,
+  but neither exists yet.
+- Weight/height are assumed kg/cm with no unit toggle — revisit if a client
+  outside that convention needs it.
 - No cross-tab/cross-session live sync for shop data — a guest's already-open
   tab won't see a coach's edit until it refetches (page reload / remount).
   No websockets/polling built for this; matches the MVP scope of the ask.
