@@ -1,11 +1,20 @@
 import { createFileRoute, redirect, Outlet } from "@tanstack/react-router";
-import { LayoutDashboard, Users, CreditCard, Package, Dumbbell, Calendar } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  Package,
+  Dumbbell,
+  Utensils,
+  Calendar,
+} from "lucide-react";
 import { DashboardLayout, type DashboardNavItem } from "@/components/dashboard/DashboardLayout";
 
 const NAV_ITEMS: DashboardNavItem[] = [
   { to: "/coach/clients", label: "Clients", icon: Users },
   { to: "/coach/products", label: "Products", icon: Package },
   { to: "/coach/training", label: "Training", icon: Dumbbell },
+  { to: "/coach/diet", label: "Diet", icon: Utensils },
   { to: "/coach", label: "Dashboard", icon: LayoutDashboard, status: "todo" },
   { to: "/coach/subscriptions", label: "Subscriptions", icon: CreditCard, status: "todo" },
   { to: "/coach/schedules", label: "Schedules", icon: Calendar, status: "todo" },

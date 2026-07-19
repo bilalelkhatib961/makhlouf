@@ -49,18 +49,26 @@ marketing header/footer.
   (`/coach/clients/$clientId`) with editable profile info (dob, weight,
   height, phone, nationality, optional profile picture), the ability to
   assign a Split with a start date, a live progress bar for the current
-  assignment, and a history table of every previous assignment. See "Clients
-  & Split Assignments" below.
+  assignment, a history table of every previous assignment, and (new) the
+  same current/history treatment for an assigned Diet Plan. See "Clients &
+  Split Assignments" below.
+- Real, dynamic **Diet system**: coach CRUD at `/coach/diet` (three tabs —
+  Food, Meals, Plans) covering food nutrition facts → meals built from food
+  with quantities → weekly diet plan templates built from meals, plus a
+  macro-recommendation helper used while building a plan and the ability to
+  assign a plan to a client. See "Diet" below.
 
 **Still hardcoded dummy data — not built yet:**
 - Dashboard, Subscriptions, Schedules in the coach CMS, and Diet, Workouts,
-  Exercises, Weight in the client portal — every list/table on those pages is
-  a hardcoded array in the route file, not a database read. These three coach
+  Exercises, Weight **in the client portal** (`/portal/*` — a client's own
+  self-tracking view; unrelated to the coach's new `/coach/diet` management
+  system above, which is real) — every list/table on those pages is a
+  hardcoded array in the route file, not a database read. The three coach
   pages are flagged under an "Uncompleted" heading in the `/coach` sidebar
   (see "Conventions" below) specifically so they're not mistaken for done.
-  Products/Categories, Training, and now Clients were the first of these to
-  go real; the same read/write/`coachMiddleware` pattern applies when the
-  rest get built.
+  Products/Categories, Training, Clients, and now Diet were the first of
+  these to go real; the same read/write/`coachMiddleware` pattern applies
+  when the rest get built.
 - Public signup/registration (only the originally-seeded coach/client
   accounts exist as "real" logins; `scripts/seed-clients.ts` adds more client
   accounts but only via a seed script, not a coach-facing "create client" UI
@@ -69,10 +77,12 @@ marketing header/footer.
 - CSRF origin-check middleware, rate limiting on login, `/unauthorized` page
   (wrong-role users are just redirected to their own home instead).
 - Password reset.
-- Client-facing training: the client's own "what do I do today" view and
-  per-set weight/rep history tracking. The coach-side half of this (assigning
-  a split, tracking progress) is now built — see "Clients & Split
-  Assignments" below — but nothing renders on the client-portal side yet.
+- Client-facing training/diet: the client's own "what do I do today" view
+  and per-set weight/rep history tracking (training), and the client's own
+  view of their assigned diet plan (diet). The coach-side half of both
+  (assigning a split/diet plan, tracking split progress) is now built — see
+  "Clients & Split Assignments" and "Diet" below — but nothing renders on the
+  client-portal side yet.
 
 When any of the above gets built, move it out of this list into the
 architecture notes below and describe how it actually works.
@@ -107,12 +117,13 @@ architecture notes below and describe how it actually works.
   (same file) — composes `authMiddleware` and additionally checks
   `role === "coach"`; every products/categories mutation uses it, every
   training mutation (`src/training/functions.ts`) reuses it verbatim, and so
-  does every client mutation (`src/clients/functions.ts`). Follow this
-  pattern for future coach-owned data (subscriptions, schedules) — don't
-  trust a client-supplied ID alone, scope by `context.user.id`/`role`.
-  `src/clients/clients.server.ts`/`assignments.server.ts` go one step further
-  and re-check `role === "client"` on the target user too, so a coach can't
-  accidentally attach a profile/assignment to another coach account.
+  does every client mutation (`src/clients/functions.ts`) and every diet
+  mutation (`src/diet/functions.ts`). Follow this pattern for future
+  coach-owned data (subscriptions, schedules) — don't trust a client-supplied
+  ID alone, scope by `context.user.id`/`role`. `src/clients/clients.server.ts`/
+  `assignments.server.ts`/`src/diet/diet-assignments.server.ts` go one step
+  further and re-check `role === "client"` on the target user too, so a coach
+  can't accidentally attach a profile/assignment to another coach account.
 - **Seed script**: `scripts/seed.ts` (run via `npm run db:seed`), deliberately
   outside `src/` — it's a standalone Node script run through `tsx`, not part
   of the Vite app bundle. `scripts/seed-catalog.ts` (`npm run db:seed:catalog`)
@@ -120,7 +131,9 @@ architecture notes below and describe how it actually works.
   (`npm run db:seed:training`) seeds demo muscle groups/categories/exercises
   and three splits. `scripts/seed-clients.ts` (`npm run db:seed:clients`)
   seeds four more client accounts plus profile/assignment data for all five —
-  depends on both of the above having already run.
+  depends on both of the above having already run. `scripts/seed-diet.ts`
+  (`npm run db:seed:diet`) seeds foods/meals/diet plans and assigns them to
+  clients — depends on `db:seed:clients` (needs profiles) having already run.
 
 ## Data model
 
@@ -234,7 +247,59 @@ MongoDB, database name `makhlouf` (see `.env` / `MONGODB_DB_NAME`).
   startDate: Date;
   createdAt: Date;
 }
+
+// foods — nutrition facts are always "per 100g", same convention as a nutrition label
+{
+  _id: ObjectId;
+  name: string;
+  image: string | null;
+  caloriesPer100g: number;
+  carbsPer100g: number;
+  proteinPer100g: number;
+  fatPer100g: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// meals
+{
+  _id: ObjectId;
+  name: string;
+  foods: Array<{ foodId: ObjectId; quantityGrams: number }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// dietPlans — always exactly 7 day entries, same invariant as splits
+{
+  _id: ObjectId;
+  name: string;
+  description: string;
+  days: Array<{
+    day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+    label: string;
+    mealIds: ObjectId[];   // meals assigned that day, duplicates allowed
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// dietPlanAssignments — append-only history, mirrors splitAssignments
+{
+  _id: ObjectId;
+  clientId: ObjectId;
+  dietPlanId: ObjectId;
+  startDate: Date;
+  createdAt: Date;
+}
 ```
+
+Diet plans have **no `durationWeeks`/progress-bar**, unlike splits — a diet
+plan isn't a time-boxed program the way a split is. "Current vs. history" for
+`dietPlanAssignments` is the same derived pattern (latest `startDate` wins),
+but the client detail page just shows "Assigned since {date}", and
+`AssignDietPlanDialog` never needed the in-progress/replace-with-radio-choice
+logic `AssignSplitDialog` has, since there's no progress to discard or keep.
 
 Pricing, stock, active-state, and images all live **per variant**, not on the product — a
 "simple" product (no real size/color choice) is just a product with exactly one variant, name
@@ -303,6 +368,20 @@ client:
 Assignment history is demo data and **not** idempotent — cleared and
 reinserted fresh per client every run (profiles *are* idempotent, upserted by
 `userId`, same as categories/muscle groups).
+
+Run `npm run db:seed:diet` **after** `db:seed:clients` (it reads client
+profiles to decide assignments and throws a clear error if none exist) to
+populate 20 foods, 8 meals, and 3 diet plans ("Lean Bulk Plan", "Cutting
+Plan", "Maintenance Plan"), then assigns each profiled client whichever
+plan's actual computed average daily calories lands closest to their own
+computed maintenance calories (same formula as the in-app macro helper,
+duplicated standalone in the script) — genuinely data-driven from each
+client's real seeded weight/height, not a hardcoded lookup. Foods/meals/plans
+are demo data, cleared and reinserted fresh every run, same reasoning as
+`seed-training.ts`. Jordan Ellis additionally gets an earlier diet-plan
+history entry so Diet Plan History has something to show; Morgan Blake (no
+profile) gets no diet assignment, consistent with their already-established
+empty state.
 
 ## Products & Catalog
 
@@ -461,7 +540,12 @@ dummy data" above), only the seed scripts add more.
 
 - **Server layer** (`src/clients/`, same shape as `src/training/`):
   `types.ts` (shared, client-safe — `ClientProfile`, `SplitAssignment`,
-  `ClientListItem`, `ClientDetail`), `progress.ts` (pure, no I/O —
+  `ClientListItem`, `ClientDetail` — `ClientListItem` also carries
+  `currentDietPlan: DietPlanAssignment | null` and `ClientDetail` carries
+  `dietPlanHistory: DietPlanAssignment[]`, both imported from `@/diet/types`
+  and populated by `clients.server.ts` calling
+  `listDietPlanAssignmentsForClient` from `@/diet/diet-assignments.server` —
+  see "Diet" below), `progress.ts` (pure, no I/O —
   `splitProgress(startDate, durationWeeks)` → `{ percent, status, weekLabel,
   endDate }`, reused by both the roster's inline mini-progress and the detail
   page's big progress card so the two never disagree), `clients.server.ts`
@@ -512,7 +596,10 @@ dummy data" above), only the seed scripts add more.
   separate "replace" mutation — both paths call the same `assignSplitFn`,
   just with a different computed `startDate`; "current vs. history" already
   being purely derived (latest by `startDate` wins) means inserting a new
-  row with an old `startDate` naturally supersedes the in-progress one. Every
+  row with an old `startDate` naturally supersedes the in-progress one. A
+  third card, "Current Diet Plan" (plan name, "Assigned since {date}",
+  **Assign/Replace Diet Plan** → `AssignDietPlanDialog.tsx`), and a "Diet
+  Plan History" table sit alongside the split ones — see "Diet" below. Every
   dialog date-picker trigger
   is a hand-rolled `<button>` styled to match the rest of the app rather than
   shadcn's `Button` component — this codebase never uses `Button` directly
@@ -540,6 +627,88 @@ dummy data" above), only the seed scripts add more.
   assignment's duration has fully elapsed — demonstrates the "current
   assignment renders as Completed" state rather than showing nothing), Morgan
   Blake (no profile row, no assignments at all — the fully-empty state).
+
+## Diet
+
+Coach-only nutrition system, structurally the mirror image of Training: food
+→ meals → diet plans, each level building on the last. No client-facing
+pieces exist yet (see "Still hardcoded dummy data" above).
+
+- **Server layer** (`src/diet/`, same shape as `src/training/`): `types.ts`
+  (shared, client-safe), `nutrition.ts` (pure, no I/O — `foodItemNutrition`/
+  `mealNutrition`/`mealsNutrition`/`roundTotals` for summing calories/carbs/
+  protein/fat, and `recommendMacros`, the macro-helper's core — see below),
+  `foods.server.ts`, `meals.server.ts` (resolves each food's name + per-100g
+  macros into `Meal.foods`, same denormalization `exercises.server.ts` does
+  for `muscleGroupName`), `diet-plans.server.ts` (resolves `mealId →
+  mealName`, same as `splits.server.ts`; always exactly 7 day entries, same
+  `normalizeDays()` pattern), `diet-assignments.server.ts`
+  (`listDietPlanAssignmentsForClient`, `assignDietPlan` — same shape as
+  `src/clients/assignments.server.ts`'s split equivalent), `upload.server.ts`
+  (`saveFoodImage`, thin wrapper over `saveAsset(file, "foods", IMAGE_MIMES)`),
+  `functions.ts` (the RPCs, all `coachMiddleware`). **Referential integrity**:
+  deleting a food is blocked if any meal references it; deleting a meal is
+  blocked if any diet plan references it; deleting a diet plan is blocked if
+  any client still has it assigned (`splits.server.ts`'s `deleteSplit` got
+  the same "still assigned" check added at the same time, for symmetry).
+- **Macro helper tool** (`recommendMacros(profile, goal)` in
+  `src/diet/nutrition.ts`): an estimate, not a medical/dietitian-grade
+  calculation — labeled as such in the UI. This app's `clientProfiles`
+  doesn't collect sex, so BMR uses a **sex-neutral approximation** of
+  Mifflin-St Jeor (`10×weight(kg) + 6.25×height(cm) − 5×age − 78` — averaging
+  the male `+5` and female `−161` constants into `−78`; age from `dob`,
+  defaulting to 30 if unset), times a fixed 1.55 "moderately active"
+  multiplier (no activity-level field exists to ask instead) for maintenance
+  calories, then ×0.8 (cut, 20% deficit) or ×1.15 (bulk, 15% surplus) for the
+  target. Protein is 2.2g/kg bodyweight either goal, fat is 25% of target
+  calories, carbs are whatever's left. Returns `null` if the client has no
+  weight/height set yet.
+- **Coach CMS** (`/coach/diet`): one route, three tabs (shadcn `Tabs`) —
+  Food, Meals, Plans. `FoodsTab`/`FoodFormDialog` (name, single-image upload
+  — same blob-preview pattern as `MuscleGroupFormDialog.tsx` — and four
+  number inputs for calories/carbs/protein/fat **per 100g**, the fixed
+  serving-size convention every food uses). `MealsTab`/`MealFormDialog`
+  (name, then repeatable food rows — `Select` a food + grams quantity +
+  remove, "Add Food", same repeatable-row shape `SplitFormDialog` uses for
+  exercises) with a live total-nutrition readout at the bottom, computed via
+  `nutrition.ts` from the already-fetched foods list as rows change — no
+  extra RPC, same live-readout idea as `ProductVariantFields.tsx`'s "price
+  after discount". `DietPlansTab`/`DietPlanFormDialog` (name, description,
+  then a 7-day `Accordion` identical in structure to `SplitFormDialog`: each
+  day gets a label input + repeatable meal-picker rows, and its own live
+  nutrition total computed by looking up each assigned meal in the
+  already-fetched meals list — no extra RPC there either). Above the
+  accordion sits the **macro helper**: a client `Select` (from
+  `getCoachClientsFn()`) + a Bulk/Cut `Select`; once both are picked,
+  `recommendMacros()` runs against that client's real profile and each day's
+  live total gets an inline delta ("+310 kcal over target" / "−18g protein
+  under target") so the coach can adjust that day's meals before saving —
+  purely a display-time aid, nothing persisted about which client a plan was
+  sized for.
+- **Client detail page**: see "Clients & Split Assignments" above — a third
+  "Current Diet Plan" card + "Diet Plan History" table, `AssignDietPlanDialog.tsx`
+  (`Select` a plan + the same date-picker as `AssignSplitDialog`, defaulting
+  to today — no in-progress/replace-choice complexity, since diet plans carry
+  no progress to discard or keep).
+- **Seed data**: `scripts/seed-diet.ts` — see "Seed accounts" above.
+
+## Global dialog behavior
+
+Every shadcn `Dialog` now keeps its header and footer fixed with only the
+middle content scrolling, by default — this used to be a per-dialog opt-in
+(`max-h-[90vh] overflow-y-auto` on `DialogContent`) that 6 existing dialogs
+each set individually; it's now baked into `src/components/ui/dialog.tsx`
+itself, so no new dialog needs to think about it. `DialogContent` caps at
+`max-h-[85vh] overflow-y-auto`; `DialogHeader`/`DialogFooter` are `sticky
+top-0`/`sticky bottom-0` with a solid `bg-background` (to mask content
+scrolling underneath) and a hairline border for separation — this works even
+though `DialogFooter` is nested inside each dialog's own `<form>` rather than
+being a direct child of `DialogContent`, since `position: sticky` only needs
+the scrolling ancestor somewhere in its containment chain. The close "X"
+button got bumped to `z-20` so it stays above the header's `z-10` stacking
+context. When adding a new dialog, only set `max-w-*` on `DialogContent` (the
+size varies per dialog) — never re-add `max-h-*`/`overflow-y-auto`, the base
+component already handles it.
 
 ## Conventions
 
@@ -622,6 +791,11 @@ dummy data" above), only the seed scripts add more.
   but neither exists yet.
 - Weight/height are assumed kg/cm with no unit toggle — revisit if a client
   outside that convention needs it.
+- The Diet macro helper's `recommendMacros()` is a sex-neutral BMR
+  approximation with a fixed activity multiplier (see "Diet" above) — if the
+  client profile ever grows a sex or activity-level field, revisit the
+  formula to use the real Mifflin-St Jeor constants instead of the averaged
+  one.
 - No cross-tab/cross-session live sync for shop data — a guest's already-open
   tab won't see a coach's edit until it refetches (page reload / remount).
   No websockets/polling built for this; matches the MVP scope of the ask.

@@ -1,3 +1,5 @@
+import type { DietPlanAssignment } from "@/diet/types";
+
 export interface ClientProfile {
   dob: string | null; // ISO date string
   weight: number | null; // kg
@@ -22,10 +24,12 @@ export interface ClientListItem {
   joinedAt: string; // ISO date string
   profile: ClientProfile;
   currentAssignment: SplitAssignment | null;
+  currentDietPlan: DietPlanAssignment | null;
 }
 
 export interface ClientDetail extends ClientListItem {
   history: SplitAssignment[]; // every assignment except currentAssignment, desc by startDate
+  dietPlanHistory: DietPlanAssignment[]; // every diet assignment except currentDietPlan
 }
 
 export interface ClientProfileInput {

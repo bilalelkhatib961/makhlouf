@@ -1,15 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImagePlus, Loader2, X } from "lucide-react";
-import {
-  createMuscleCategoryFn,
-  updateMuscleCategoryFn,
-  uploadMuscleImageFn,
-} from "@/training/functions";
-import type { MuscleCategory, MuscleGroup } from "@/training/types";
+import { createFoodFn, updateFoodFn, uploadFoodImageFn } from "@/diet/functions";
+import type { Food } from "@/diet/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -22,16 +17,14 @@ interface FieldErrors {
   name?: string;
 }
 
-export function MuscleCategoryFormDialog({
+export function FoodFormDialog({
   open,
   onOpenChange,
-  muscleGroups,
-  muscleCategory,
+  food,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  muscleGroups: MuscleGroup[];
-  muscleCategory: MuscleCategory | null;
+  food: Food | null;
 }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -39,7 +32,10 @@ export function MuscleCategoryFormDialog({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [muscleGroupIds, setMuscleGroupIds] = useState<string[]>([]);
+  const [calories, setCalories] = useState("0");
+  const [carbs, setCarbs] = useState("0");
+  const [protein, setProtein] = useState("0");
+  const [fat, setFat] = useState("0");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const previewRef = useRef<string | null>(null);
@@ -47,20 +43,26 @@ export function MuscleCategoryFormDialog({
 
   useEffect(() => {
     if (!open) return;
-    if (muscleCategory) {
-      setName(muscleCategory.name);
-      setImageUrl(muscleCategory.image);
-      setPreviewUrl(muscleCategory.image);
-      setMuscleGroupIds(muscleCategory.muscleGroupIds);
+    if (food) {
+      setName(food.name);
+      setImageUrl(food.image);
+      setPreviewUrl(food.image);
+      setCalories(String(food.caloriesPer100g));
+      setCarbs(String(food.carbsPer100g));
+      setProtein(String(food.proteinPer100g));
+      setFat(String(food.fatPer100g));
     } else {
       setName("");
       setImageUrl(null);
       setPreviewUrl(null);
-      setMuscleGroupIds([]);
+      setCalories("0");
+      setCarbs("0");
+      setProtein("0");
+      setFat("0");
     }
     setFieldErrors({});
     setFormError(null);
-  }, [open, muscleCategory]);
+  }, [open, food]);
 
   useEffect(() => {
     if (open) return;
@@ -76,7 +78,7 @@ export function MuscleCategoryFormDialog({
     try {
       const data = new FormData();
       data.set("file", file);
-      const result = await uploadMuscleImageFn({ data });
+      const result = await uploadFoodImageFn({ data });
       setImageUrl(result.url);
     } catch (err) {
       setPreviewUrl(imageUrl);
@@ -92,10 +94,6 @@ export function MuscleCategoryFormDialog({
     setPreviewUrl(null);
   };
 
-  const toggleGroup = (id: string) => {
-    setMuscleGroupIds((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
-  };
-
   const saveMutation = useMutation({
     mutationFn: async () => {
       const errors: FieldErrors = {};
@@ -105,14 +103,21 @@ export function MuscleCategoryFormDialog({
         throw new Error("Please fix the highlighted fields.");
       }
 
-      const input = { name: name.trim(), image: imageUrl, muscleGroupIds };
-      if (muscleCategory) {
-        return updateMuscleCategoryFn({ data: { id: muscleCategory.id, input } });
+      const input = {
+        name: name.trim(),
+        image: imageUrl,
+        caloriesPer100g: Number(calories) || 0,
+        carbsPer100g: Number(carbs) || 0,
+        proteinPer100g: Number(protein) || 0,
+        fatPer100g: Number(fat) || 0,
+      };
+      if (food) {
+        return updateFoodFn({ data: { id: food.id, input } });
       }
-      return createMuscleCategoryFn({ data: input });
+      return createFoodFn({ data: input });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["coach", "muscle-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["coach", "foods"] });
       onOpenChange(false);
     },
     onError: (err: Error) => setFormError(err.message),
@@ -120,11 +125,9 @@ export function MuscleCategoryFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>
-            {muscleCategory ? "Edit Muscle Category" : "Add Muscle Category"}
-          </DialogTitle>
+          <DialogTitle>{food ? "Edit Food" : "Add Food"}</DialogTitle>
         </DialogHeader>
 
         <form
@@ -135,10 +138,10 @@ export function MuscleCategoryFormDialog({
           className="space-y-5"
         >
           <div>
-            <Label htmlFor="muscle-category-name">Name</Label>
+            <Label htmlFor="food-name">Name</Label>
             <Input
-              id="muscle-category-name"
-              placeholder="e.g. Arms"
+              id="food-name"
+              placeholder="e.g. Chicken Breast"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-2"
@@ -189,20 +192,54 @@ export function MuscleCategoryFormDialog({
           </div>
 
           <div>
-            <Label>Muscle Groups</Label>
-            <div className="mt-2 max-h-64 space-y-3 overflow-y-auto rounded-sm border border-border p-3">
-              {muscleGroups.length === 0 && (
-                <p className="text-sm text-muted-foreground">No muscle groups yet.</p>
-              )}
-              {muscleGroups.map((group) => (
-                <label key={group.id} className="flex cursor-pointer items-center gap-3 text-sm">
-                  <Checkbox
-                    checked={muscleGroupIds.includes(group.id)}
-                    onCheckedChange={() => toggleGroup(group.id)}
-                  />
-                  <span className="flex-1">{group.name}</span>
-                </label>
-              ))}
+            <p className="text-[10px] uppercase tracking-[0.25em] text-foreground/50">
+              Nutrition facts — per 100g
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="food-calories">Calories</Label>
+                <Input
+                  id="food-calories"
+                  type="number"
+                  step="1"
+                  value={calories}
+                  onChange={(e) => setCalories(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="food-carbs">Carbs (g)</Label>
+                <Input
+                  id="food-carbs"
+                  type="number"
+                  step="0.1"
+                  value={carbs}
+                  onChange={(e) => setCarbs(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="food-protein">Protein (g)</Label>
+                <Input
+                  id="food-protein"
+                  type="number"
+                  step="0.1"
+                  value={protein}
+                  onChange={(e) => setProtein(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="food-fat">Fat (g)</Label>
+                <Input
+                  id="food-fat"
+                  type="number"
+                  step="0.1"
+                  value={fat}
+                  onChange={(e) => setFat(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
             </div>
           </div>
 
@@ -217,7 +254,7 @@ export function MuscleCategoryFormDialog({
               {(saveMutation.isPending || uploading) && (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               )}
-              Save Muscle Category
+              Save Food
             </button>
           </DialogFooter>
         </form>

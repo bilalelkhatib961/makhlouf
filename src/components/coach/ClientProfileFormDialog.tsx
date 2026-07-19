@@ -104,7 +104,7 @@ export function ClientProfileFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Client Profile</DialogTitle>
         </DialogHeader>

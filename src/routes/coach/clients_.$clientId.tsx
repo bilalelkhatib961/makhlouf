@@ -5,6 +5,7 @@ import { ArrowLeft, Pencil, Plus } from "lucide-react";
 import { getCoachClientDetailFn } from "@/clients/functions";
 import { splitProgress, type SplitAssignmentStatus } from "@/clients/progress";
 import type { SplitAssignment } from "@/clients/types";
+import type { DietPlanAssignment } from "@/diet/types";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { ClientProfileFormDialog } from "@/components/coach/ClientProfileFormDialog";
 import { AssignSplitDialog } from "@/components/coach/AssignSplitDialog";
+import { AssignDietPlanDialog } from "@/components/coach/AssignDietPlanDialog";
 
 export const Route = createFileRoute("/coach/clients_/$clientId")({
   component: ClientDetailPage,
@@ -69,6 +71,15 @@ function AssignmentRow({ assignment }: { assignment: SplitAssignment }) {
   );
 }
 
+function DietAssignmentRow({ assignment }: { assignment: DietPlanAssignment }) {
+  return (
+    <TableRow>
+      <TableCell className="font-medium">{assignment.dietPlanName}</TableCell>
+      <TableCell className="text-muted-foreground">{formatDate(assignment.startDate)}</TableCell>
+    </TableRow>
+  );
+}
+
 function ClientDetailPage() {
   const { clientId } = Route.useParams();
   const detailQuery = useQuery({
@@ -77,6 +88,7 @@ function ClientDetailPage() {
   });
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [assignSplitOpen, setAssignSplitOpen] = useState(false);
+  const [assignDietPlanOpen, setAssignDietPlanOpen] = useState(false);
 
   if (detailQuery.isLoading || !detailQuery.data) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -98,7 +110,7 @@ function ClientDetailPage() {
 
       <PageHeader eyebrow="Client" title={`${client.name}.`} description={client.email} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="border border-border p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -196,6 +208,30 @@ function ClientDetailPage() {
             <p className="mt-6 text-sm text-muted-foreground">No split assigned yet.</p>
           )}
         </div>
+
+        <div className="border border-border p-6">
+          <div className="flex items-start justify-between gap-4">
+            <p className="font-display text-xl">Current Diet Plan</p>
+            <button
+              onClick={() => setAssignDietPlanOpen(true)}
+              className="inline-flex h-9 items-center gap-2 rounded-sm bg-foreground px-4 text-xs font-medium uppercase tracking-[0.18em] text-background"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {client.currentDietPlan ? "Replace Diet Plan" : "Assign Diet Plan"}
+            </button>
+          </div>
+
+          {client.currentDietPlan ? (
+            <div className="mt-6">
+              <p className="text-lg font-medium">{client.currentDietPlan.dietPlanName}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Assigned since {formatDate(client.currentDietPlan.startDate)}
+              </p>
+            </div>
+          ) : (
+            <p className="mt-6 text-sm text-muted-foreground">No diet plan assigned yet.</p>
+          )}
+        </div>
       </div>
 
       <div className="mt-12">
@@ -226,6 +262,32 @@ function ClientDetailPage() {
         </div>
       </div>
 
+      <div className="mt-12">
+        <h2 className="font-display text-2xl">Diet Plan History</h2>
+        <div className="mt-4 border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Diet Plan</TableHead>
+                <TableHead>Start Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {client.dietPlanHistory.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={2} className="py-8 text-center text-muted-foreground">
+                    No previous diet plans.
+                  </TableCell>
+                </TableRow>
+              )}
+              {client.dietPlanHistory.map((assignment) => (
+                <DietAssignmentRow key={assignment.id} assignment={assignment} />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
       <ClientProfileFormDialog
         open={editProfileOpen}
         onOpenChange={setEditProfileOpen}
@@ -236,6 +298,11 @@ function ClientDetailPage() {
         onOpenChange={setAssignSplitOpen}
         clientId={client.id}
         currentAssignment={client.currentAssignment}
+      />
+      <AssignDietPlanDialog
+        open={assignDietPlanOpen}
+        onOpenChange={setAssignDietPlanOpen}
+        clientId={client.id}
       />
     </div>
   );

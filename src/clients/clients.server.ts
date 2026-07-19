@@ -1,5 +1,6 @@
 import { ObjectId, type Collection } from "mongodb";
 import { getDb } from "@/lib/db.server";
+import { listDietPlanAssignmentsForClient } from "@/diet/diet-assignments.server";
 import { listAssignmentsForClient } from "./assignments.server";
 import type { ClientDetail, ClientListItem, ClientProfile, ClientProfileInput } from "./types";
 
@@ -50,7 +51,10 @@ export async function listClients(): Promise<ClientListItem[]> {
 
   return Promise.all(
     users.map(async (user) => {
-      const assignments = await listAssignmentsForClient(user._id.toString());
+      const [assignments, dietAssignments] = await Promise.all([
+        listAssignmentsForClient(user._id.toString()),
+        listDietPlanAssignmentsForClient(user._id.toString()),
+      ]);
       return {
         id: user._id.toString(),
         name: user.name,
@@ -58,6 +62,7 @@ export async function listClients(): Promise<ClientListItem[]> {
         joinedAt: user.createdAt.toISOString(),
         profile: toProfile(profileByUserId.get(user._id.toString())),
         currentAssignment: assignments[0] ?? null,
+        currentDietPlan: dietAssignments[0] ?? null,
       };
     }),
   );
@@ -70,11 +75,13 @@ export async function getClientDetail(userId: string): Promise<ClientDetail> {
     .findOne({ _id: new ObjectId(userId), role: "client" });
   if (!user) throw new Error("Client not found");
 
-  const [profileDoc, assignments] = await Promise.all([
+  const [profileDoc, assignments, dietAssignments] = await Promise.all([
     (await profilesCollection()).findOne({ userId: user._id }),
     listAssignmentsForClient(userId),
+    listDietPlanAssignmentsForClient(userId),
   ]);
   const [currentAssignment, ...history] = assignments;
+  const [currentDietPlan, ...dietPlanHistory] = dietAssignments;
 
   return {
     id: user._id.toString(),
@@ -84,6 +91,8 @@ export async function getClientDetail(userId: string): Promise<ClientDetail> {
     profile: toProfile(profileDoc),
     currentAssignment: currentAssignment ?? null,
     history,
+    currentDietPlan: currentDietPlan ?? null,
+    dietPlanHistory,
   };
 }
 
