@@ -23,10 +23,10 @@ import { Route as PortalWorkoutsRouteImport } from './routes/portal/workouts'
 import { Route as PortalWeightRouteImport } from './routes/portal/weight'
 import { Route as PortalExercisesRouteImport } from './routes/portal/exercises'
 import { Route as PortalDietRouteImport } from './routes/portal/diet'
+import { Route as CoachTrainingRouteImport } from './routes/coach/training'
 import { Route as CoachSubscriptionsRouteImport } from './routes/coach/subscriptions'
 import { Route as CoachSchedulesRouteImport } from './routes/coach/schedules'
 import { Route as CoachProductsRouteImport } from './routes/coach/products'
-import { Route as CoachExercisesRouteImport } from './routes/coach/exercises'
 import { Route as CoachClientsRouteImport } from './routes/coach/clients'
 
 const ShopRoute = ShopRouteImport.update({
@@ -99,6 +99,11 @@ const PortalDietRoute = PortalDietRouteImport.update({
   path: '/diet',
   getParentRoute: () => PortalRoute,
 } as any)
+const CoachTrainingRoute = CoachTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => CoachRoute,
+} as any)
 const CoachSubscriptionsRoute = CoachSubscriptionsRouteImport.update({
   id: '/subscriptions',
   path: '/subscriptions',
@@ -112,11 +117,6 @@ const CoachSchedulesRoute = CoachSchedulesRouteImport.update({
 const CoachProductsRoute = CoachProductsRouteImport.update({
   id: '/products',
   path: '/products',
-  getParentRoute: () => CoachRoute,
-} as any)
-const CoachExercisesRoute = CoachExercisesRouteImport.update({
-  id: '/exercises',
-  path: '/exercises',
   getParentRoute: () => CoachRoute,
 } as any)
 const CoachClientsRoute = CoachClientsRouteImport.update({
@@ -135,10 +135,10 @@ export interface FileRoutesByFullPath {
   '/portal': typeof PortalRouteWithChildren
   '/shop': typeof ShopRoute
   '/coach/clients': typeof CoachClientsRoute
-  '/coach/exercises': typeof CoachExercisesRoute
   '/coach/products': typeof CoachProductsRoute
   '/coach/schedules': typeof CoachSchedulesRoute
   '/coach/subscriptions': typeof CoachSubscriptionsRoute
+  '/coach/training': typeof CoachTrainingRoute
   '/portal/diet': typeof PortalDietRoute
   '/portal/exercises': typeof PortalExercisesRoute
   '/portal/weight': typeof PortalWeightRoute
@@ -154,10 +154,10 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/shop': typeof ShopRoute
   '/coach/clients': typeof CoachClientsRoute
-  '/coach/exercises': typeof CoachExercisesRoute
   '/coach/products': typeof CoachProductsRoute
   '/coach/schedules': typeof CoachSchedulesRoute
   '/coach/subscriptions': typeof CoachSubscriptionsRoute
+  '/coach/training': typeof CoachTrainingRoute
   '/portal/diet': typeof PortalDietRoute
   '/portal/exercises': typeof PortalExercisesRoute
   '/portal/weight': typeof PortalWeightRoute
@@ -176,10 +176,10 @@ export interface FileRoutesById {
   '/portal': typeof PortalRouteWithChildren
   '/shop': typeof ShopRoute
   '/coach/clients': typeof CoachClientsRoute
-  '/coach/exercises': typeof CoachExercisesRoute
   '/coach/products': typeof CoachProductsRoute
   '/coach/schedules': typeof CoachSchedulesRoute
   '/coach/subscriptions': typeof CoachSubscriptionsRoute
+  '/coach/training': typeof CoachTrainingRoute
   '/portal/diet': typeof PortalDietRoute
   '/portal/exercises': typeof PortalExercisesRoute
   '/portal/weight': typeof PortalWeightRoute
@@ -199,10 +199,10 @@ export interface FileRouteTypes {
     | '/portal'
     | '/shop'
     | '/coach/clients'
-    | '/coach/exercises'
     | '/coach/products'
     | '/coach/schedules'
     | '/coach/subscriptions'
+    | '/coach/training'
     | '/portal/diet'
     | '/portal/exercises'
     | '/portal/weight'
@@ -218,10 +218,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/shop'
     | '/coach/clients'
-    | '/coach/exercises'
     | '/coach/products'
     | '/coach/schedules'
     | '/coach/subscriptions'
+    | '/coach/training'
     | '/portal/diet'
     | '/portal/exercises'
     | '/portal/weight'
@@ -239,10 +239,10 @@ export interface FileRouteTypes {
     | '/portal'
     | '/shop'
     | '/coach/clients'
-    | '/coach/exercises'
     | '/coach/products'
     | '/coach/schedules'
     | '/coach/subscriptions'
+    | '/coach/training'
     | '/portal/diet'
     | '/portal/exercises'
     | '/portal/weight'
@@ -362,6 +362,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalDietRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/coach/training': {
+      id: '/coach/training'
+      path: '/training'
+      fullPath: '/coach/training'
+      preLoaderRoute: typeof CoachTrainingRouteImport
+      parentRoute: typeof CoachRoute
+    }
     '/coach/subscriptions': {
       id: '/coach/subscriptions'
       path: '/subscriptions'
@@ -383,13 +390,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoachProductsRouteImport
       parentRoute: typeof CoachRoute
     }
-    '/coach/exercises': {
-      id: '/coach/exercises'
-      path: '/exercises'
-      fullPath: '/coach/exercises'
-      preLoaderRoute: typeof CoachExercisesRouteImport
-      parentRoute: typeof CoachRoute
-    }
     '/coach/clients': {
       id: '/coach/clients'
       path: '/clients'
@@ -402,19 +402,19 @@ declare module '@tanstack/react-router' {
 
 interface CoachRouteChildren {
   CoachClientsRoute: typeof CoachClientsRoute
-  CoachExercisesRoute: typeof CoachExercisesRoute
   CoachProductsRoute: typeof CoachProductsRoute
   CoachSchedulesRoute: typeof CoachSchedulesRoute
   CoachSubscriptionsRoute: typeof CoachSubscriptionsRoute
+  CoachTrainingRoute: typeof CoachTrainingRoute
   CoachIndexRoute: typeof CoachIndexRoute
 }
 
 const CoachRouteChildren: CoachRouteChildren = {
   CoachClientsRoute: CoachClientsRoute,
-  CoachExercisesRoute: CoachExercisesRoute,
   CoachProductsRoute: CoachProductsRoute,
   CoachSchedulesRoute: CoachSchedulesRoute,
   CoachSubscriptionsRoute: CoachSubscriptionsRoute,
+  CoachTrainingRoute: CoachTrainingRoute,
   CoachIndexRoute: CoachIndexRoute,
 }
 

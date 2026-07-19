@@ -40,12 +40,17 @@ marketing header/footer.
   live data (`/` and `/shop`, rendered as collection sections), a product
   quick-view dialog, and a client-side cart (add/edit/remove, stock-aware
   quantity limits — **no checkout**). See "Products & Catalog" below.
+- Real, dynamic **Training system**: coach CRUD at `/coach/training` (four
+  tabs — Muscle Groups, Muscle Categories, Exercises, Splits) covering the
+  full programming hierarchy a coach builds workouts from. Coach-only this
+  round — no client-facing assignment or workout-history tracking yet. See
+  "Training" below.
 
 **Still hardcoded dummy data — not built yet:**
-- Clients, Subscriptions, Exercises, Schedules in the coach CMS, and Diet,
-  Workouts, Exercises, Weight in the client portal — every list/table on
-  those pages is a hardcoded array in the route file, not a database read.
-  Products/Categories were the first of these to go real; the same
+- Clients, Subscriptions, Schedules in the coach CMS, and Diet, Workouts,
+  Exercises, Weight in the client portal — every list/table on those pages is
+  a hardcoded array in the route file, not a database read. Products/
+  Categories and now Training were the first of these to go real; the same
   read/write/`coachMiddleware` pattern applies when the rest get built.
 - Public signup/registration (only the two seeded accounts exist; the coach
   presumably creates client accounts, but that flow doesn't exist yet).
@@ -53,6 +58,11 @@ marketing header/footer.
 - CSRF origin-check middleware, rate limiting on login, `/unauthorized` page
   (wrong-role users are just redirected to their own home instead).
 - Password reset.
+- Client-facing training: assigning a split to a client, the client's "what
+  do I do today" view, and per-set weight/rep history tracking. The data
+  model (`splits.days[].exercises[].sets`) was designed with this in mind —
+  see "Training" below — but none of it is built. Explicitly deferred by the
+  user when this feature was requested.
 
 When any of the above gets built, move it out of this list into the
 architecture notes below and describe how it actually works.
@@ -85,14 +95,17 @@ architecture notes below and describe how it actually works.
   UX only, NOT the server function endpoint itself (it's callable directly
   regardless of which route renders it). There's also **`coachMiddleware`**
   (same file) — composes `authMiddleware` and additionally checks
-  `role === "coach"`; every products/categories mutation uses it. Follow this
-  pattern for future coach-owned data (clients, subscriptions, exercises,
+  `role === "coach"`; every products/categories mutation uses it, and every
+  training mutation (`src/training/functions.ts`) reuses it verbatim too.
+  Follow this pattern for future coach-owned data (clients, subscriptions,
   schedules) — don't trust a client-supplied ID alone, scope by
   `context.user.id`/`role`.
 - **Seed script**: `scripts/seed.ts` (run via `npm run db:seed`), deliberately
   outside `src/` — it's a standalone Node script run through `tsx`, not part
   of the Vite app bundle. `scripts/seed-catalog.ts` (`npm run db:seed:catalog`)
-  seeds demo categories/products the same way.
+  seeds demo categories/products the same way. `scripts/seed-training.ts`
+  (`npm run db:seed:training`) seeds demo muscle groups/categories/exercises
+  and one split.
 
 ## Data model
 
@@ -142,6 +155,47 @@ MongoDB, database name `makhlouf` (see `.env` / `MONGODB_DB_NAME`).
   createdAt: Date;
   updatedAt: Date;
 }
+
+// muscleGroups — leaf-level, e.g. "Biceps — Long Head", "Rear Delt"
+{ _id: ObjectId; name: string; image: string | null; createdAt: Date; updatedAt: Date; }
+
+// muscleCategories — groups muscle groups, e.g. "Arms" contains both biceps heads
+{
+  _id: ObjectId;
+  name: string;
+  image: string | null;
+  muscleGroupIds: ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// exercises — targets exactly ONE muscle group
+{
+  _id: ObjectId;
+  name: string;
+  description: string;                // optional, "" is valid
+  muscleGroupId: ObjectId;
+  assets: Array<{ url: string; type: "image" | "file" | "video"; isPrimary: boolean }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// splits — a weekly training program template, always exactly 7 day entries
+{
+  _id: ObjectId;
+  name: string;
+  description: string;                // optional
+  durationWeeks: number;
+  days: Array<{
+    day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+    label: string;                    // optional day label, e.g. "Push Day"
+    exercises: Array<{ exerciseId: ObjectId; sets: number[] }>;
+    // sets = one entry per set, each value is that set's target rep count,
+    // e.g. [12, 10, 8] = 3 sets. An empty `exercises` array *is* the rest day.
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
 ```
 
 Pricing, stock, active-state, and images all live **per variant**, not on the product — a
@@ -155,9 +209,9 @@ and `listProductsPublic` (`src/products/products.server.ts`) returns only the ac
 flat on the product with `variants` as bare option-axis metadata (`{name, options[]}`) — that
 shape is gone.
 
-Clients list, subscriptions, exercises, schedules, diet logs, workouts, and
-weight entries are still just static arrays inside their route files — no
-schema yet. Record the shape here once each one goes real.
+Clients list, subscriptions, schedules, diet logs, workouts, and weight
+entries are still just static arrays inside their route files — no schema
+yet. Record the shape here once each one goes real.
 
 ### Seed accounts
 
@@ -177,6 +231,13 @@ changes rather than migrate in place. The seeded collection is named "Built
 for the grind." with description "Gear, fuel, and programs we actually use.
 Curated. Tested. Minimal." (the site's original hardcoded shop-section copy,
 now real data) and references all 6 seeded products, `showOnLandingPage: true`.
+
+Run `npm run db:seed:training` to populate 15 demo muscle groups, 6 muscle
+categories, 15 exercises (one per muscle group), and one split ("Push Pull
+Legs Arms", 6 weeks). Muscle groups/categories are idempotent (matched by
+`name`, same pattern as categories above); exercises and splits are **not** —
+cleared and reinserted fresh every run, same reasoning as products. Uses the
+same bundled product photos as `seed-catalog.ts` for placeholder images.
 
 ## Products & Catalog
 
@@ -268,6 +329,63 @@ now real data) and references all 6 seeded products, `showOnLandingPage: true`.
   from `useCart()` (no props). **Checkout is a disabled button, on purpose**
   — not built yet.
 
+## Training
+
+Coach-only programming system: muscle groups → muscle categories → exercises
+→ splits, each level building on the last. "Exercises" in the coach nav was
+renamed to **"Training"** (`/coach/exercises` → `/coach/training`) since the
+page now covers the whole hierarchy, not a flat exercise list. No
+client-facing pieces exist yet — see "Still hardcoded dummy data" above.
+
+- **Server layer** (`src/training/`, same shape as `src/products/`):
+  `types.ts` (shared, client-safe), `muscle-groups.server.ts`,
+  `muscle-categories.server.ts`, `exercises.server.ts`, `splits.server.ts`,
+  `upload.server.ts`, `functions.ts` (the `createServerFn` RPCs — every one
+  uses `coachMiddleware`, nothing here is public). **Referential integrity**
+  mirrors `categories.server.ts`'s product-count block: deleting a muscle
+  group is blocked if any exercise or muscle category still references it;
+  deleting an exercise is blocked if any split still references it. Muscle
+  categories have no incoming references from anything else, so they delete
+  freely.
+- **Media upload generalized beyond images**: exercises need image *and*
+  video uploads, but the original `src/products/upload.server.ts` hardcoded
+  image-only mimetypes. Pulled the disk-write logic out into a new
+  `src/lib/upload.server.ts` (`saveAsset(file, folder, allowedMimeMap)` —
+  generic mkdir/randomUUID/writeFile) and a new `src/lib/assets.ts` (shared
+  `AssetType`/`Asset`, which `src/products/types.ts` now re-exports as
+  `ProductAsset` so every existing product import kept working unchanged).
+  `src/products/upload.server.ts`'s `saveProductImage` became a thin wrapper
+  over `saveAsset(file, "products", IMAGE_MIMES)` — same behavior, zero
+  product-side risk. `src/training/upload.server.ts` exports two thin
+  wrappers of its own: `saveExerciseAsset` (`saveAsset(file, "exercises",
+  ...)`, images + video) and `saveMuscleImage` (`saveAsset(file, "muscles",
+  ...)`, images only — used by both the Muscle Groups and Muscle Categories
+  forms rather than reusing the product upload endpoint, to keep the
+  `products` upload folder scoped to products only).
+- **Coach CMS** (`/coach/training`): one route, four tabs (shadcn `Tabs`) —
+  Muscle Groups, Muscle Categories, Exercises, Splits — in that order since
+  it's also the natural setup order for a coach starting from scratch.
+  `MuscleGroupsTab`/`MuscleGroupFormDialog` (name + single-image picker, no
+  array — a group only ever has one image). `MuscleCategoriesTab`/
+  `MuscleCategoryFormDialog` (name, image, checkbox picker over muscle
+  groups — same picker pattern as `CollectionFormDialog`'s product list).
+  `ExercisesTab`/`ExerciseFormDialog` (name, description, muscle group
+  `Select`, plus `ExerciseAssetFields.tsx` — a standalone asset uploader
+  supporting mixed image/video with primary selection, built fresh rather
+  than extracting `ProductVariantFields.tsx` to avoid touching already-
+  verified product code for a same-day feature; renders a muted `<video>`
+  thumbnail instead of `<img>` for video assets). `SplitsTab`/
+  `SplitFormDialog` (name, description, duration in weeks, then a shadcn
+  `Accordion` — one item per weekday, first real use of that primitive in
+  this app — each expandable to a day-label input and a repeatable list of
+  exercise rows; reps are entered as a comma-separated string like "12,10,8"
+  and parsed to `number[]` on submit via `parseSets()`). All four dialogs
+  follow the established blob-preview upload pattern
+  (`URL.createObjectURL(file)` shown immediately, swapped for the real
+  server URL once the upload resolves) so new media never shows broken
+  before save.
+- **Seed data**: `scripts/seed-training.ts` — see "Seed accounts" above.
+
 ## Conventions
 
 - **Routing**: TanStack Start file-based routing under `src/routes/` — see
@@ -332,10 +450,15 @@ now real data) and references all 6 seeded products, `showOnLandingPage: true`.
 - "May add additional [client-tracking] features in the future" — the user
   flagged this explicitly, so don't assume diet/workouts/exercises/weight is
   the final feature set for the client portal.
-- Removing a product asset (or deleting a product entirely) does not delete
-  the underlying file from `public/uploads/products/` — only the DB
-  reference goes away. Fine for now; revisit if disk usage becomes a real
-  concern.
+- Removing a product/exercise/muscle-group/muscle-category asset (or
+  deleting the record entirely) does not delete the underlying file from
+  `public/uploads/<folder>/` — only the DB reference goes away. Fine for now;
+  revisit if disk usage becomes a real concern.
+- Training is coach-only so far. Not built: assigning a split to a client,
+  the client's "what do I do today" view, and per-set weight/rep history —
+  see "Still hardcoded dummy data" above. The `splits.days[].exercises[].sets`
+  shape was designed to support a future per-set "completed" flag and history
+  log without a schema change, but neither exists yet.
 - No cross-tab/cross-session live sync for shop data — a guest's already-open
   tab won't see a coach's edit until it refetches (page reload / remount).
   No websockets/polling built for this; matches the MVP scope of the ask.

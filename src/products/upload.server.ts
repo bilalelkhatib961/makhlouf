@@ -1,32 +1,17 @@
-import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { saveAsset, type MimeMap } from "@/lib/upload.server";
 import type { ProductAsset } from "./types";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "products");
-
-const EXTENSION_BY_MIME: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-  "image/svg+xml": "svg",
+const IMAGE_MIMES: MimeMap = {
+  "image/jpeg": { ext: "jpg", type: "image" },
+  "image/png": { ext: "png", type: "image" },
+  "image/webp": { ext: "webp", type: "image" },
+  "image/gif": { ext: "gif", type: "image" },
+  "image/svg+xml": { ext: "svg", type: "image" },
 };
 
 export async function saveProductImage(file: File): Promise<ProductAsset> {
   if (!file.type.startsWith("image/")) {
     throw new Error("Only image uploads are supported right now.");
   }
-  const extension = EXTENSION_BY_MIME[file.type];
-  if (!extension) {
-    throw new Error(`Unsupported image type: ${file.type}`);
-  }
-
-  await mkdir(UPLOAD_DIR, { recursive: true });
-
-  const filename = `${randomUUID()}.${extension}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(UPLOAD_DIR, filename), buffer);
-
-  return { url: `/uploads/products/${filename}`, type: "image", isPrimary: false };
+  return saveAsset(file, "products", IMAGE_MIMES);
 }

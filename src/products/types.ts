@@ -1,10 +1,7 @@
-export type AssetType = "image" | "file" | "video";
+import type { Asset } from "@/lib/assets";
 
-export interface ProductAsset {
-  url: string;
-  type: AssetType;
-  isPrimary: boolean;
-}
+export type { AssetType } from "@/lib/assets";
+export type ProductAsset = Asset;
 
 export interface Category {
   id: string;
