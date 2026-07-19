@@ -57,6 +57,12 @@ marketing header/footer.
   with quantities → weekly diet plan templates built from meals, plus a
   macro-recommendation helper used while building a plan and the ability to
   assign a plan to a client. See "Diet" below.
+- Real, dynamic **Galleries**: coach CRUD at `/coach/galleries` (name,
+  description, multi-image upload, "show on landing page" toggle), a public
+  `/` teaser and full `/gallery` page reading the same live data, a
+  gallery-switcher letting a visitor pick which named gallery is active, and
+  a lightbox with prev/next navigation between that gallery's images. See
+  "Galleries" below.
 
 **Still hardcoded dummy data — not built yet:**
 - Dashboard, Subscriptions, Schedules in the coach CMS, and Diet, Workouts,
@@ -117,8 +123,9 @@ architecture notes below and describe how it actually works.
   (same file) — composes `authMiddleware` and additionally checks
   `role === "coach"`; every products/categories mutation uses it, every
   training mutation (`src/training/functions.ts`) reuses it verbatim, and so
-  does every client mutation (`src/clients/functions.ts`) and every diet
-  mutation (`src/diet/functions.ts`). Follow this pattern for future
+  does every client mutation (`src/clients/functions.ts`), every diet
+  mutation (`src/diet/functions.ts`), and every gallery mutation
+  (`src/galleries/functions.ts`). Follow this pattern for future
   coach-owned data (subscriptions, schedules) — don't trust a client-supplied
   ID alone, scope by `context.user.id`/`role`. `src/clients/clients.server.ts`/
   `assignments.server.ts`/`src/diet/diet-assignments.server.ts` go one step
@@ -134,6 +141,8 @@ architecture notes below and describe how it actually works.
   depends on both of the above having already run. `scripts/seed-diet.ts`
   (`npm run db:seed:diet`) seeds foods/meals/diet plans and assigns them to
   clients — depends on `db:seed:clients` (needs profiles) having already run.
+  `scripts/seed-galleries.ts` (`npm run db:seed:galleries`) seeds four demo
+  photo galleries, no dependency on the other seed scripts.
 
 ## Data model
 
@@ -291,6 +300,17 @@ MongoDB, database name `makhlouf` (see `.env` / `MONGODB_DB_NAME`).
   dietPlanId: ObjectId;
   startDate: Date;
   createdAt: Date;
+}
+
+// galleries
+{
+  _id: ObjectId;
+  name: string;
+  description: string;          // optional, shown as a subtitle when present
+  images: Array<{ url: string }>;  // order = display order — no per-image tag/title
+  showOnLandingPage: boolean;   // gates `/` only — `/gallery` always shows every gallery
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
@@ -691,6 +711,51 @@ pieces exist yet (see "Still hardcoded dummy data" above).
   to today — no in-progress/replace-choice complexity, since diet plans carry
   no progress to discard or keep).
 - **Seed data**: `scripts/seed-diet.ts` — see "Seed accounts" above.
+
+## Galleries
+
+Coach-managed photo galleries, structurally mirroring Collections (`src/products/collections.server.ts`)
+almost exactly, just for images instead of products — a gallery's images live directly on the
+gallery document, there's no separate cross-referenced entity to CRUD.
+
+- **Server layer** (`src/galleries/`, mirrors `src/products/`): `types.ts` (one `Gallery` shape
+  serves both admin and public reads — there's no sensitive field to strip, unlike products'
+  `basePrice`), `galleries.server.ts` (`listGalleriesAdmin`, `listGalleriesPublic(onlyLandingPage)`,
+  CRUD — no referential integrity needed on delete, nothing else references a gallery),
+  `upload.server.ts` (`saveGalleryImage`, thin wrapper over `saveAsset(file, "galleries",
+  IMAGE_MIMES)`), `functions.ts` (`getPublicGalleriesFn` is the only public RPC, mirrors
+  `getPublicCollectionsFn`; the rest are `coachMiddleware`), `queries.ts`
+  (`galleriesQuery(scope: "landing" | "gallery")`, a `queryOptions()` factory identical in shape to
+  `src/products/queries.ts`'s `collectionsQuery(scope)` — `index.tsx`/`gallery.tsx` both
+  `ensureQueryData` it in their route `loader`, same pattern `shop.tsx` already uses).
+- **Coach CMS** (`/coach/galleries`): a single page, no tabs needed (one entity, no
+  sub-hierarchy) — `GalleriesTab.tsx` (table: cover thumbnail = first image, name, description,
+  image count, "Landing Page" badge, actions) + `GalleryFormDialog.tsx` (name, description,
+  "show on landing page" `Switch`, and a multi-image uploader — a fresh, simpler sibling of
+  `ExerciseAssetFields.tsx`: no "type" since images-only, no "primary" flag since galleries don't
+  need one — the first image is just the implicit cover).
+- **Public-facing — mirrors Collections exactly, not a switcher**: `src/components/sections/Gallery.tsx`
+  (parallels `Collections.tsx`) takes a `scope: "landing" | "gallery"` prop, fetches
+  `galleriesQuery(scope)`, and renders one `GallerySection` per gallery (filtering out any with zero
+  images) — **not** a single section with a gallery-picker/switcher. `scope="landing"` only fetches
+  the landing-flagged galleries; `scope="gallery"` (the full `/gallery` page) fetches all of them.
+  `src/components/sections/GallerySection.tsx` (parallels `CollectionSection.tsx`) is the actual
+  header/scroller/lightbox for one gallery — **the gallery's own `name` is the section heading**
+  (previously a hardcoded "Inside the work." headline shared by everything; that's gone), with
+  `description` as an optional subtitle underneath, exactly how `CollectionSection` uses
+  `collection.name`/`description`. Each section owns its own scroll ref, same reason multiple
+  `CollectionSection`s don't fight over one. No per-image caption text (the old hardcoded
+  `tag`/`title` overlay on every image is gone). **Lightbox has prev/next**: the open image is
+  tracked by *index* within that section's own `gallery.images` array (not a bare URL string, which
+  is what the original single hardcoded gallery used), so `ChevronLeft`/`ChevronRight` buttons step
+  through it, wrapping at the ends; a `keydown` listener (left/right arrows, `Escape` to close) is
+  active while a lightbox is open — this is the concrete "switch between gallery images" feature,
+  scoped to whichever gallery's lightbox is currently open.
+- **Seed data**: `scripts/seed-galleries.ts` (`npm run db:seed:galleries`) — 4 galleries with
+  different names, reusing the bundled `gallery-1.jpg`…`gallery-5.jpg`/`hero-athlete.jpg`/
+  `portrait.jpg` as placeholder images (same trick `seed-catalog.ts` established), exactly 2 flagged
+  `showOnLandingPage: true`. Demo data, cleared and reinserted fresh every run, same reasoning as
+  `seed-training.ts`.
 
 ## Global dialog behavior
 

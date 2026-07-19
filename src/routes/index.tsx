@@ -5,9 +5,14 @@ import { PromoBanner } from "@/components/sections/PromoBanner";
 import { Gallery } from "@/components/sections/Gallery";
 import { Collections } from "@/components/sections/Collections";
 import { collectionsQuery } from "@/products/queries";
+import { galleriesQuery } from "@/galleries/queries";
 
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(collectionsQuery("landing")),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(collectionsQuery("landing")),
+      context.queryClient.ensureQueryData(galleriesQuery("landing")),
+    ]),
   head: () => ({
     meta: [
       { title: "Makhlouf — Premium Personal Training & Fitness Gear" },
@@ -33,7 +38,7 @@ function Index() {
       <Hero />
       <About />
       <PromoBanner />
-      <Gallery />
+      <Gallery scope="landing" />
       <Collections scope="landing" />
     </>
   );

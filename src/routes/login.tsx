@@ -62,7 +62,7 @@ function LoginPage() {
           Welcome <span className="italic font-light">back.</span>
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-foreground/70">
-          Sign in with your coach or client account to reach your dashboard.
+          Sign in with your account to reach your dashboard.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-10 space-y-6">

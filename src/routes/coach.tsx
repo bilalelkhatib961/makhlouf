@@ -6,6 +6,7 @@ import {
   Package,
   Dumbbell,
   Utensils,
+  Images,
   Calendar,
 } from "lucide-react";
 import { DashboardLayout, type DashboardNavItem } from "@/components/dashboard/DashboardLayout";
@@ -15,6 +16,7 @@ const NAV_ITEMS: DashboardNavItem[] = [
   { to: "/coach/products", label: "Products", icon: Package },
   { to: "/coach/training", label: "Training", icon: Dumbbell },
   { to: "/coach/diet", label: "Diet", icon: Utensils },
+  { to: "/coach/galleries", label: "Galleries", icon: Images },
   { to: "/coach", label: "Dashboard", icon: LayoutDashboard, status: "todo" },
   { to: "/coach/subscriptions", label: "Subscriptions", icon: CreditCard, status: "todo" },
   { to: "/coach/schedules", label: "Schedules", icon: Calendar, status: "todo" },

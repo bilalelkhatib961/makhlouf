@@ -119,9 +119,7 @@ function ClientDetailPage() {
             </Avatar>
             <div>
               <p className="font-display text-xl">{client.name}</p>
-              <p className="text-xs text-muted-foreground">
-                Joined {formatDate(client.joinedAt)}
-              </p>
+              <p className="text-xs text-muted-foreground">Joined {formatDate(client.joinedAt)}</p>
             </div>
           </div>
           <button
@@ -143,25 +141,19 @@ function ClientDetailPage() {
             </dd>
           </div>
           <div>
-            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Weight
-            </dt>
+            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Weight</dt>
             <dd className="mt-1">
               {client.profile.weight !== null ? `${client.profile.weight} kg` : "Not set"}
             </dd>
           </div>
           <div>
-            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Height
-            </dt>
+            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Height</dt>
             <dd className="mt-1">
               {client.profile.height !== null ? `${client.profile.height} cm` : "Not set"}
             </dd>
           </div>
           <div>
-            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Phone
-            </dt>
+            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Phone</dt>
             <dd className="mt-1">{client.profile.phone ?? "Not set"}</dd>
           </div>
           <div>

@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Gallery } from "@/components/sections/Gallery";
+import { galleriesQuery } from "@/galleries/queries";
 
 export const Route = createFileRoute("/gallery")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(galleriesQuery("gallery")),
   head: () => ({
     meta: [
       { title: "Gallery — Makhlouf" },
@@ -24,7 +26,7 @@ export const Route = createFileRoute("/gallery")({
           The <span className="italic font-light">work.</span>
         </h1>
       </div>
-      <Gallery />
+      <Gallery scope="gallery" />
     </div>
   ),
 });
