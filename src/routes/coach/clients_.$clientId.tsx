@@ -110,70 +110,70 @@ function ClientDetailPage() {
 
       <PageHeader eyebrow="Client" title={`${client.name}.`} description={client.email} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="border border-border p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={client.profile.profilePicture ?? undefined} alt="" />
-                <AvatarFallback>{initials(client.name)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-display text-xl">{client.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  Joined {formatDate(client.joinedAt)}
-                </p>
-              </div>
+      <div className="border border-border p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-16 w-16">
+              <AvatarImage src={client.profile.profilePicture ?? undefined} alt="" />
+              <AvatarFallback>{initials(client.name)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-display text-xl">{client.name}</p>
+              <p className="text-xs text-muted-foreground">
+                Joined {formatDate(client.joinedAt)}
+              </p>
             </div>
-            <button
-              onClick={() => setEditProfileOpen(true)}
-              aria-label="Edit profile"
-              className="grid h-9 w-9 place-items-center rounded-sm hover:bg-muted"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
           </div>
-
-          <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                Date of Birth
-              </dt>
-              <dd className="mt-1">
-                {client.profile.dob ? formatDate(client.profile.dob) : "Not set"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                Weight
-              </dt>
-              <dd className="mt-1">
-                {client.profile.weight !== null ? `${client.profile.weight} kg` : "Not set"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                Height
-              </dt>
-              <dd className="mt-1">
-                {client.profile.height !== null ? `${client.profile.height} cm` : "Not set"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                Phone
-              </dt>
-              <dd className="mt-1">{client.profile.phone ?? "Not set"}</dd>
-            </div>
-            <div>
-              <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                Nationality
-              </dt>
-              <dd className="mt-1">{client.profile.nationality ?? "Not set"}</dd>
-            </div>
-          </dl>
+          <button
+            onClick={() => setEditProfileOpen(true)}
+            aria-label="Edit profile"
+            className="grid h-9 w-9 place-items-center rounded-sm hover:bg-muted"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
         </div>
 
+        <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Date of Birth
+            </dt>
+            <dd className="mt-1">
+              {client.profile.dob ? formatDate(client.profile.dob) : "Not set"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Weight
+            </dt>
+            <dd className="mt-1">
+              {client.profile.weight !== null ? `${client.profile.weight} kg` : "Not set"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Height
+            </dt>
+            <dd className="mt-1">
+              {client.profile.height !== null ? `${client.profile.height} cm` : "Not set"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Phone
+            </dt>
+            <dd className="mt-1">{client.profile.phone ?? "Not set"}</dd>
+          </div>
+          <div>
+            <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Nationality
+            </dt>
+            <dd className="mt-1">{client.profile.nationality ?? "Not set"}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mt-6">
         <div className="border border-border p-6">
           <div className="flex items-start justify-between gap-4">
             <p className="font-display text-xl">Current Split</p>
